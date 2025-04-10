@@ -13,3 +13,8 @@ To run the script, first setup the data_dir environmental variable by using:
 ```
 export DATASET_PATH="$PWD/data/datasets"
 ```
+
+To start running jobs (e.g. for bing-query-logs-unit without data router), try:
+```
+python src/run_wrangler.py --data_dir %your_data_directory/data_transformation/benchmark-bing-query-logs-unit%  --num_trials 3  --seed 42 --k 3 --d 0 --num_iter 5 --llm llama3.2
+```
