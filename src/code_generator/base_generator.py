@@ -25,6 +25,8 @@ class CodeGenerator(ABC):
 
         # pre-defined categories
         self.openai_models = {"gpt-4": "gpt-4-turbo"}
+        # openrouter models
+        self.openrouter_models = {"deepseek-r1": "deepseek/deepseek-r1:free"}
         # llama3.2: llama3.2-3b-instruct, qwen2.5-coder: qwen2.5-coder-7b
         # ollama is completely local and free
         self.ollama_models = {"llama3.2-3b": "llama3.2", "qwen2.5-coder-7b": "qwen2.5-coder"}
@@ -66,9 +68,22 @@ class CodeGenerator(ABC):
     
 
     def call_llm(self, messages, response_model):
-        if self.llm in self.openai_models:
+        print(self.llm)
+        if self.llm in self.openrouter_models:
+            model_name = self.openrouter_models[self.llm]
+            client = OpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key="your api key here",
+            )
+            # Extract structured data from natural language
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=messages)
+            structured_output = response.choices[0].message.content
+            print("structured output   ", structured_output)
+        elif self.llm in self.openai_models:
             model_name = self.openai_models[self.llm]
-            client = instructor.from_openai(client = openai.OpenAI(api_key="your key here"))
+            client = instructor.from_openai(client = openai.OpenAI(api_key="your api key here"))
 
             # Extract structured data from natural language
             structured_output = client.chat.completions.create(
@@ -97,7 +112,7 @@ class CodeGenerator(ABC):
             print(f"structured output   {structured_output}")
         elif self.llm in self.together_models:
             model_name = self.together_models[self.llm]
-            client = Together(api_key="your key here")
+            client = Together(api_key="your api key here")
 
             response = client.chat.completions.create(
                 model=model_name,

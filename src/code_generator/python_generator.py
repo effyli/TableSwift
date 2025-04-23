@@ -36,7 +36,7 @@ class PythonGenerator(CodeGenerator):
         print("here is the complete messages, ", messages)
         response_model = PythonResponse if not self.use_data_router else PythonResponse_DataRouter
         structured_output = self.call_llm(messages, response_model)
-        if self.llm in self.ollama_models or self.llm in self.together_models:
+        if self.llm in self.ollama_models or self.llm in self.together_models or self.llm in self.openrouter_models:
             structured_output = format_model_output_python(structured_output)
             print("Structured output after formatting: ", structured_output)
         return structured_output
@@ -52,7 +52,7 @@ class PythonGenerator(CodeGenerator):
         This is the same for both code generators
         """
         result = {"resoning": None, "transformation_code": None, "validation_code": None}
-        if self.llm in self.ollama_models or self.llm in self.together_models:
+        if self.llm in self.ollama_models or self.llm in self.together_models or self.llm in self.openrouter_models:
             result["transformation_code"] = structured_output
             return result
         if not self.use_data_router:
