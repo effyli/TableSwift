@@ -1,13 +1,22 @@
 import axios from 'axios';
 import { LoginCredentials, LoginResponse } from '../types/auth';
 
-const API_URL = 'http://localhost:8000/api'; // Replace with your actual API URL
+const API_URL = 'http://localhost:80/api'; // Replace with your actual API URL
 
 export const authService = {
   async login(credentials: LoginCredentials): Promise<LoginResponse> {
     try {
-      // In a real application, this would be a real API endpoint
-      const response = await axios.post(`${API_URL}/auth/login`, credentials);
+      // Convert credentials to FormData as expected by the backend
+      const formData = new FormData();
+      formData.append('username', credentials.email);
+      formData.append('password', credentials.password);
+
+      const response = await axios.post(`${API_URL}/auth/login`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        withCredentials: true
+      });
       return response.data;
     } catch (error) {
       throw new Error('Invalid credentials');
