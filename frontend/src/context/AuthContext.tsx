@@ -1,61 +1,65 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { AuthContextType, AuthState, LoginCredentials, User } from '../types/auth';
+import { AuthContextType, AuthState, LoginCredentials } from '../types/auth';
 import { authService } from '../services/auth.service';
+import { userService } from '../services/user.service';
 
 const initialState: AuthState = {
   user: null,
-  token: null,
   isAuthenticated: false,
+  loading: true,
 };
 
 export const AuthContext = createContext<AuthContextType>({
   ...initialState,
   login: async () => {},
-  logout: () => {},
+  logout: async () => {},
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<AuthState>(initialState);
 
   useEffect(() => {
-    // Check for stored authentication on mount
-    const token = authService.getStoredToken();
-    const userStr = authService.getStoredUser();
-    
-    if (token && userStr) {
-      const user = JSON.parse(userStr);
-      setState({
-        user,
-        token,
-        isAuthenticated: true,
-      });
-    }
+    // Check if the user is authenticated
+    (async () => {
+      try {
+        const user = await userService.getCurrentUser();
+        setState({
+          user,
+          isAuthenticated: user !== null,
+          loading: false,
+        });
+      } catch {
+        setState({
+          ...initialState,
+          loading: false,
+        });
+      }
+    })();
   }, []);
 
   const login = async (credentials: LoginCredentials) => {
+    setState(prev => ({ ...prev, loading: true }));
     try {
-      const { user, token } = await authService.login(credentials);
-      
-      // Store authentication data
-      authService.setStoredToken(token);
-      authService.setStoredUser(user);
+      const { user } = await authService.login(credentials);
       
       setState({
         user,
-        token,
         isAuthenticated: true,
+        loading: false,
       });
     } catch (error) {
+      setState(prev => ({ ...prev, loading: false }));
       throw error;
     }
   };
 
-  const logout = () => {
-    // Clear stored authentication data
-    authService.removeStoredToken();
-    authService.removeStoredUser();
-    
-    setState(initialState);
+  const logout = async () => {
+    setState(prev => ({ ...prev, loading: true }));
+    await authService.logout();
+    setState({
+      ...initialState,
+      loading: false,
+    });
   };
 
   return (

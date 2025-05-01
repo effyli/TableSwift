@@ -1,12 +1,9 @@
-export interface User {
-  id: string;
-  email: string;
-}
+import { User } from './user';
 
 export interface AuthState {
   user: User | null;
-  token: string | null;
   isAuthenticated: boolean;
+  loading: boolean;
 }
 
 export interface LoginCredentials {
@@ -16,10 +13,9 @@ export interface LoginCredentials {
 
 export interface LoginResponse {
   user: User;
-  token: string;
 }
 
 export interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }

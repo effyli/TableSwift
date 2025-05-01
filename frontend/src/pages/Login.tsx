@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const Login = () => {
+export const Login: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   
@@ -11,6 +11,15 @@ const Login = () => {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
+
+  const { isAuthenticated, loading } = useAuth();
+
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+    isAuthenticated && navigate('/dashboard');
+  }, [loading]);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -34,12 +43,12 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
+    setIsLoading(true);
     
     if (!validateForm()) {
       return;
     }
     
-    setIsLoading(true);
     try {
       await login({ email, password });
       navigate('/dashboard');
@@ -191,4 +200,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+// export default Login;

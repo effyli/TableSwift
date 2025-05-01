@@ -1,8 +1,12 @@
-import React from 'react';
+import { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 
-const Dashboard = () => {
+export const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
+
+  useEffect(() => {
+    console.log('User2:', user);
+  }, [user]);
 
   const handleLogout = () => {
     logout();
@@ -35,4 +39,3 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
