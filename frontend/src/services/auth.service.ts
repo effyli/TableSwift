@@ -22,7 +22,6 @@ export const authService = {
         user: response.data
       };
     } catch (error: any) {
-      console.error('Login error:', error.response?.data || error.message);
       throw new Error(error.response?.data?.detail || 'Invalid credentials');
     }
   },
@@ -30,20 +29,8 @@ export const authService = {
   async logout(): Promise<void> {
     try {
       await axios.post(`${API_URL}/auth/logout`);
-    } catch (error) {
-      console.error('Logout failed:', error);
+    } catch {
+      return
     }
   },
-
-  // async authUser(): Promise<boolean | null> {
-  //   try {
-  //     const response = await axios.post(`${API_URL}/auth/user`);
-  //     if (response.status === 200) {
-  //       return true;
-  //     }
-  //     return null;
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // }
 };
