@@ -65,12 +65,15 @@ axiosInstance.interceptors.response.use(
             originalRequest._retry = true;
 
             try {
-                await axios.get(`${API_URL}/csrf-token`, { withCredentials: true });
-                
-                return axiosInstance(originalRequest);
+            await axios.get(`${API_URL}/csrf-token`, { withCredentials: true });
+            
+            return axiosInstance(originalRequest);
             } catch (error) {
-                return Promise.reject(error);
+            return Promise.reject(error);
             }
+        } else if (error.response?.status === 401 && !window.location.pathname.includes('/login')) {
+            console.error('Unauthorized access:', error.response.data);
+            window.location.href = '/login';
         }
 
         return Promise.reject(error);
