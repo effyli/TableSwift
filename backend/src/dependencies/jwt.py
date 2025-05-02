@@ -1,6 +1,6 @@
 from fastapi import Request, HTTPException, status
-from .services.auth import verify_access_token
-from .models.user import TokenData
+from ..services.auth import verify_access_token
+from ..models.user import TokenData
 
 
 def validate_token(request: Request) -> TokenData:

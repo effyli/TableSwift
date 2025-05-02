@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from typing import List
 from ..models.user import User
 from ..services.user import get_all_users, get_user_by_email
@@ -34,8 +34,6 @@ async def get_user(tokenData: str = Depends(validate_token)):
                 detail="User not found"
             )
         return user
-    except HTTPException:
-        raise
     except Exception as e:
         print(f"Error in get_user: {str(e)}")
         print(traceback.format_exc())

@@ -1,5 +1,4 @@
-from fastapi import APIRouter
-from fastapi import Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import Response
 from typing import Annotated
@@ -7,7 +6,7 @@ from ..models.user import UserCreate, User
 from ..services.auth import authenticate_user, create_access_token
 from ..services.user import create_user
 from ..config import get_settings
-from ..dependencies import validate_token
+from ..dependencies import validate_csrf_token
 import traceback
 
 router = APIRouter(
@@ -17,7 +16,7 @@ router = APIRouter(
 
 settings = get_settings()
 
-@router.post("/register", response_model=User)
+@router.post("/register", response_model=User, dependencies=[Depends(validate_csrf_token)])
 async def register(user_create: UserCreate):
     """Register a new user."""
     try:
@@ -31,9 +30,11 @@ async def register(user_create: UserCreate):
         )
 
 
-@router.post("/login", response_model=User)
-async def login(response: Response, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
-    """Login user and return access token."""
+@router.post("/login", response_model=User, dependencies=[Depends(validate_csrf_token)])
+async def login(
+    response: Response,
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+):
     user = authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -55,14 +56,8 @@ async def login(response: Response, form_data: Annotated[OAuth2PasswordRequestFo
     return user
 
 
-@router.post("/logout")
+@router.post("/logout", dependencies=[Depends(validate_csrf_token)])
 async def logout(response: Response):
     """Clear the access token cookie."""
     response.delete_cookie(key="access_token", httponly=True, secure=True)
     return {"message": "Logged out successfully"}
-
-
-@router.post("/user", dependencies=[Depends(validate_token)])
-def authentication_check():
-    """Authenticate user and return 200 status code."""
-    return {"status": "ok"}

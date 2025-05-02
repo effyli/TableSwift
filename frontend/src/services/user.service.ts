@@ -1,14 +1,10 @@
-import axios from 'axios';
 import { User } from '../types/user';
-
-const API_URL = 'http://localhost:80';
-
-axios.defaults.withCredentials = true;
+import axiosInstance from './axios.config';
 
 export const userService = {
     async getCurrentUser(): Promise<User | null> {
         try {
-            const response = await axios.get(`${API_URL}/users/me`);
+            const response = await axiosInstance.get('/users/me');
             if (response.status === 200) {
                 return response.data;
             }
@@ -21,7 +17,7 @@ export const userService = {
 
     async getAllUsers(): Promise<User[]> {
         try {
-            const response = await axios.get(`${API_URL}/users`);
+            const response = await axiosInstance.get('/users');
             return response.data;
         } catch (error) {
             throw error;

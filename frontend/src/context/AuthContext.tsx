@@ -19,6 +19,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [state, setState] = useState<AuthState>(initialState);
 
   useEffect(() => {
+    // Get csrf token
+    (async () => {
+      try {
+        await authService.getCsrfToken();
+      } catch (error) {
+        console.error('Failed to get CSRF token:', error);
+      }
+    })();
+
     // Check if the user is authenticated
     (async () => {
       try {
