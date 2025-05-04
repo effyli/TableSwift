@@ -12,7 +12,7 @@ export const ContentView: React.FC<ContentViewProps> = ({
   data,
 }) => {
   return (
-    <div className="bg-black h-screen p-4 flex-grow">
+    <div className="bg-black min-h-0 h-full p-4 flex-1 flex flex-col">
       <div className="flex justify-between items-center mb-6">
         <div>
           <span className="text-gray-400 mr-4">{fileName}</span>

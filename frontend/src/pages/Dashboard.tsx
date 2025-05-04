@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useState, useEffect } from 'react';
 import { Sidebar } from '../components/Sidebar';
 import { ActionHistory } from '../components/ActionHistory';
 import { ContentView } from '../components/ContentView';
+import { TopBar, ActiveView } from '../components/TopBar';
 
 interface Action {
   id: string;
@@ -12,6 +12,22 @@ interface Action {
 }
 
 export const Dashboard: React.FC = () => {
+  // Mobile view state
+  const [activeView, setActiveView] = useState<ActiveView>('content');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+
+  // Listen for window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
   const [actions, setActions] = useState<Action[]>([
     {
       id: '1',
@@ -77,22 +93,50 @@ export const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="relative h-screen bg-black-lighter flex">
-      {/* Main layout */}
-      <Sidebar 
-        onFileSelect={handleFileSelect}
-        uploadError={uploadError}
+    <div className="flex flex-col h-screen bg-black-lighter overflow-hidden">
+      <TopBar 
+        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        activeView={activeView}
+        setActiveView={setActiveView}
+        isMobile={isMobile}
       />
-      <ActionHistory
-        actions={actions}
-        onNewAction={handleNewAction}
-        onRevert={handleRevert}
-      />
-      <ContentView
-        fileName={fileData.name}
-        rowCount={fileData.rowCount}
-        data={fileData.data}
-      />
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <Sidebar 
+          onFileSelect={handleFileSelect}
+          uploadError={uploadError}
+          isSidebarOpen={isSidebarOpen}
+          setIsSidebarOpen={setIsSidebarOpen}
+        />
+
+        {/* Main content area */}
+        <div className="flex flex-1 flex-col lg:flex-row min-w-0">
+          {/* Action History - hidden on mobile when content view is active */}
+          <div className={`
+            ${isMobile ? (activeView === 'actions' ? 'flex' : 'hidden') : 'flex'}
+            lg:flex flex-col flex-1
+          `}>
+            <ActionHistory
+              actions={actions}
+              onNewAction={handleNewAction}
+              onRevert={handleRevert}
+            />
+          </div>
+
+          {/* Content View - hidden on mobile when actions view is active */}
+          <div className={`
+            ${isMobile ? (activeView === 'content' ? 'flex' : 'hidden') : 'flex'}
+            flex-1 min-w-0
+          `}>
+            <ContentView
+              fileName={fileData.name}
+              rowCount={fileData.rowCount}
+              data={fileData.data}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

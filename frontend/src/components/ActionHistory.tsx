@@ -19,7 +19,7 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({
   onRevert,
 }) => {
   return (
-    <div className="bg-black-light border-r border-black-lighter h-screen p-4 flex-grow">
+    <div className="bg-black-light border-r border-black-lighter min-h-0 h-full p-4 overflow-y-auto flex-1 flex flex-col">
       <button
         onClick={onNewAction}
         className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors mb-6 flex items-center justify-center"
