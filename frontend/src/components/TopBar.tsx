@@ -30,7 +30,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             <div className="flex items-center gap-4">
                 <button
                     onClick={onToggleSidebar}
-                    className="text-gray-300 hover:text-white p-2 -m-2"
+                    className="text-white p-2 -m-2 cursor-pointer"
                 >
                     <IoMenu size={24} />
                 </button>
@@ -66,10 +66,10 @@ export const TopBar: React.FC<TopBarProps> = ({
             <div className="flex items-center gap-4">
                 <ClickAwayListener onClickAway={() => openUserPopup && setOpenUserPopup(false)}>
                     <div className="flex items-center gap-2 text-gray-300">
-                        <AiOutlineUser onClick={() => {setOpenUserPopup(!openUserPopup)}} size={20} />
+                        <AiOutlineUser className='cursor-pointer' onClick={() => {setOpenUserPopup(!openUserPopup)}} size={20} />
                         <div className={`absolute flex flex-col gap-4 items-end top-[60px] right-4 p-4 bg-black-light border border-black-lighter rounded-lg shadow-lg mt-2 ${openUserPopup ? 'block' : 'hidden'}`}>
                             <span className="text-sm">{user?.email}</span>
-                            <span className="text-sm flex gap-2 text-red" onClick={logout}>Logout <IoIosLogOut size={20} /></span>
+                            <span className="text-sm flex gap-2 text-red cursor-pointer" onClick={logout}>Logout <IoIosLogOut size={20} /></span>
                         </div>
                     </div>
                 </ClickAwayListener>

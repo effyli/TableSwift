@@ -14,7 +14,7 @@ interface Action {
 export const Dashboard: React.FC = () => {
   // Mobile view state
   const [activeView, setActiveView] = useState<ActiveView>('content');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
   // Listen for window resize

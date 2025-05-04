@@ -1,5 +1,6 @@
 import React from 'react';
 import "../styles/components/Sidebar.css";
+import { FaRegTrashAlt } from "react-icons/fa";
 
 interface SidebarProps {
   onFileSelect: (file: File) => void;
@@ -21,10 +22,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         bg-black-light border-r border-black-lighter
         transition-all duration-300 ease-in-out overflow-hidden
         top-[60px] lg:top-0
-        ${isSidebarOpen ? 'translate-x-0 w-[265px]' : '-translate-x-full lg:translate-x-0 w-0'}
+        ${isSidebarOpen ? 'translate-x-0 w-[250px]' : '-translate-x-full lg:translate-x-0 w-0'}
         `}
         >
-            <div className='w-[265px] h-full flex flex-col'>
+            <div className='w-[250px] h-full flex flex-col'>
                 <div className={`px-3 py-4 mt-4`}>
                     <div className="relative mb-4">
                         <input
@@ -67,13 +68,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         {/* Example projects - replace with actual data */}
                         {
                             [...Array(100)].map((_, index) => (
-                                <div
-                                    key={index}
-                                    className="text-sm font-light text-ellipsis overflow-hidden whitespace-nowrap text-nowrap px-3 py-3 text-gray-300 hover:bg-black-lighter rounded-lg cursor-pointer"
-                                >
-                                    <span>
-                                        project project project project {index + 1}
-                                    </span>
+                                <div className='group flex gap-1 justify-between items-center text-gray-300 hover:bg-black-lighter px-3 py-3 rounded-lg cursor-pointer text-sm font-light' key={index}>
+                                    <div
+                                        key={index}
+                                        className="text-ellipsis overflow-hidden whitespace-nowrap text-nowrap"
+                                    >
+                                        <span>
+                                            project project project project {index + 1}
+                                        </span>
+                                    </div>
+                                    <div className='opacity-0 group-hover:opacity-100 transition-opacity text-red'>
+                                        <FaRegTrashAlt />
+                                    </div>
                                 </div>
                             ))
                         }
