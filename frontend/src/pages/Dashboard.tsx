@@ -1,60 +1,98 @@
-import { useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { userService } from '../services/user.service';
+import { Sidebar } from '../components/Sidebar';
+import { ActionHistory } from '../components/ActionHistory';
+import { ContentView } from '../components/ContentView';
+
+interface Action {
+  id: string;
+  action: string;
+  column: string;
+  datetime: string;
+}
 
 export const Dashboard: React.FC = () => {
-  const { loading, user, logout } = useAuth();
+  const [actions, setActions] = useState<Action[]>([
+    {
+      id: '1',
+      action: 'Transformation',
+      column: 'Start_date',
+      datetime: '12:33 13-03-2025',
+    },
+    {
+      id: '2',
+      action: 'Transformation',
+      column: 'End_date',
+      datetime: '13:28 13-03-2025',
+    },
+    {
+      id: '3',
+      action: 'Transformation',
+      column: 'Value',
+      datetime: '14:44 13-03-2025',
+    },
+  ]);
 
-  useEffect(() => {
-    if (loading) {
+  const [uploadError, setUploadError] = useState<string|null>(null);
+  const [fileData] = useState({
+    name: 'file.csv',
+    rowCount: 358,
+    data: [
+      { id: 1, start_date: '2025-01-01', end_date: '2025-12-31', value: 100 },
+      { id: 2, start_date: '2025-02-01', end_date: '2025-12-31', value: 200 },
+      { id: 3, start_date: '2025-03-01', end_date: '2025-12-31', value: 300 },
+    ],
+  });
+
+  const handleFileSelect = async (file: File) => {
+    setUploadError(null);
+
+    // Validate file size (e.g., max 10MB)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_FILE_SIZE) {
+      setUploadError('File size too large. Maximum size is 10MB.');
       return;
     }
 
-    console.log('User:', user);
-  }, [loading]);
-
-  const handleLogout = () => {
-    logout();
+    // Create FormData
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      console.log('Selected file:', file.name);
+    } catch (error) {
+      console.error('Upload error:', error);
+      setUploadError(error instanceof Error ? error.message : 'Failed to upload file');
+    }
   };
 
-  async function fetchUsers() {
-    try {
-      const users = await userService.getAllUsers();
-      console.log('Users:', users);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    }
-  }
+  const handleNewAction = () => {
+    // Implement new action logic
+    console.log('New action clicked');
+  };
+
+  const handleRevert = (actionId: string) => {
+    // Implement revert logic
+    console.log('Revert clicked for action:', actionId);
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black to-black-lighter py-12 px-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-          <div className="flex items-center space-x-4">
-            <span className="text-gray-400">Welcome, {user?.email}</span>
-            <button
-              onClick={fetchUsers}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              Fetch all users
-            </button>
-            <button
-              onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-        
-        <div className="mt-8 bg-black-light border border-black-lighter rounded-xl p-6">
-          <h2 className="text-xl font-semibold text-white mb-4">Protected Content</h2>
-          <p className="text-gray-400">
-            This is a protected route. You can only see this if you're logged in.
-          </p>
-        </div>
-      </div>
+    <div className="relative h-screen bg-black-lighter flex">
+      {/* Main layout */}
+      <Sidebar 
+        onFileSelect={handleFileSelect}
+        uploadError={uploadError}
+      />
+      <ActionHistory
+        actions={actions}
+        onNewAction={handleNewAction}
+        onRevert={handleRevert}
+      />
+      <ContentView
+        fileName={fileData.name}
+        rowCount={fileData.rowCount}
+        data={fileData.data}
+      />
     </div>
   );
 };

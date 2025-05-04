@@ -1,0 +1,81 @@
+import React from 'react';
+import { useAuth } from '../context/AuthContext';
+import "../styles/components/Sidebar.css";
+
+import { IoIosLogOut } from "react-icons/io";
+import { AiOutlineUser } from "react-icons/ai";
+
+interface SidebarProps {
+  onFileSelect: (file: File) => void;
+  uploadError?: string|null;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ onFileSelect, uploadError }) => {
+ const { user, logout } = useAuth();
+  return (
+    <div className="bg-black-light border-r border-black-lighter h-screen w-64 flex flex-col">
+        <div className='px-3 py-4 mt-4'>
+            <div className="relative mb-4">
+                <input
+                    type="file"
+                    id="file-upload"
+                    className="hidden"
+                    onChange={(e) => {
+                        if (e.target.files && e.target.files.length > 0) {
+                            onFileSelect(e.target.files[0]);
+                        }
+                    }}
+                    accept=".csv"
+                />
+                <label
+                    htmlFor="file-upload"
+                    className={`w-full flex items-center justify-center px-4 py-6 border border-dotted rounded-lg hover:bg-black-lighter transition-colors cursor-pointer ${
+                        uploadError ? 'border-red-500' : 'border-grey'
+                    }`}
+                >
+                    <span className="mr-2 text-lg">+</span>
+                    <span className="text-gray-300">Select file</span>
+                </label>
+                <div className="mt-1 text-xs text-gray-500 px-1">
+                    Only supports CSV files
+                </div>
+                {uploadError && (
+                    <div className="mt-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded text-red-500 text-sm animate-slideIn">
+                        {uploadError}
+                    </div>
+                )}
+            </div>
+        </div>
+
+        <div className='px-3 flex-grow overflow-y-auto' id="sidebar-projects">
+            <h2 className="text-sm font-semibold sticky top-0 bg-black-light py-2 px-3">
+                Projects
+            </h2>
+            
+            <div>
+                {/* Example projects - replace with actual data */}
+                {
+                    [...Array(100)].map((_, index) => (
+                        <div
+                            key={index}
+                            className="text-sm font-light text-ellipsis overflow-hidden whitespace-nowrap text-nowrap px-3 py-3 text-gray-300 hover:bg-black-lighter rounded-lg cursor-pointer"
+                        >
+                            <span>
+                                project project project project {index + 1}
+                            </span>
+                        </div>
+                    ))
+                }
+            </div>
+        </div>
+
+        <div className="py-6 px-3 flex gap-2 justify-between items-center text-md font-light">
+            <div className='flex gap-1 items-center'>
+                <AiOutlineUser />
+                <span>{user?.email}</span>
+            </div>
+            <IoIosLogOut onClick={logout} className='text-red cursor-pointer' />
+        </div>
+    </div>
+  );
+};

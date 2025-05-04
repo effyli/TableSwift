@@ -1,0 +1,21 @@
+#sidebar-projects {
+    scrollbar-color: var(--color-grey) transparent;
+    scrollbar-width: thin;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-slideIn {
+    animation: slideIn 0.2s ease-out forwards;
+}
