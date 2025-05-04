@@ -50,7 +50,7 @@ async def login(
         httponly=True,
         secure=False, #TODO make true in production
         samesite="lax",
-        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60 
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 12
     )
     
     return user
