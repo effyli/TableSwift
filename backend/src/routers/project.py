@@ -3,7 +3,7 @@ from ..dependencies import validate_token
 from ..services.project import create_project, get_user_projects, get_user_project, delete_project
 from ..services.file import save_uploaded_file, delete_file
 from ..dependencies.csrf import validate_csrf_token
-from ..models.project import ProjectBase, ProjectCreate, Project
+from ..models.project import ProjectBase, ProjectCreate
 from ..models.user import TokenData
 from typing import List
 import traceback
@@ -48,7 +48,7 @@ async def generate_project(
 
         # Save the file
         try:
-            file_path, file_name = await save_uploaded_file(file, token_data.user_id)
+            file_id, file_obj = await save_uploaded_file(file, token_data.user_id)
         except Exception as e:
             raise HTTPException(
                 status_code=500,
@@ -57,8 +57,9 @@ async def generate_project(
         
         # Create project
         project_data = ProjectCreate(
-            name=file_name,
-            file_path=file_path,
+            name=file.filename,
+            file_id=file_id,
+            file=file_obj,
             user_id=token_data.user_id
         )
         
@@ -105,11 +106,12 @@ async def delete_project_endpoint(project_id: UUID, token_data: TokenData = Depe
         
         try:
             # First try to delete the file
-            await delete_file(project.file_path)
+            print(f"Attempting to delete file at {project.file.file_path}")
+            await delete_file(project.file.file_path)
             
             # If file deletion successful, delete from database
-            delete_project(project_id, token_data.user_id)
-            
+            delete_project(project.id, token_data.user_id)
+
             return {"status": "success", "message": "Project and associated files deleted successfully"}
             
         except Exception as e:

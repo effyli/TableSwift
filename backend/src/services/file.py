@@ -3,8 +3,30 @@ from uuid import uuid4, UUID
 from pathlib import Path
 import os
 import asyncio
+from ..models.file import CreateFile, File
+from ..database import get_db
 
-async def save_uploaded_file(file: UploadFile, user_id: UUID) -> tuple[str, str]:
+async def save_file_db(file: CreateFile) -> int:
+    """
+    Save the file information to the database and return the new file ID.
+    """
+    with get_db() as conn:
+        try:
+            # Insert the file into the database and get the ID using RETURNING
+            result = conn.execute("""
+                INSERT INTO files (file_path)
+                VALUES (?)
+                RETURNING id
+            """, [file.file_path]).fetchone()
+            return result[0]
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to save file to database: {str(e)}"
+            )
+        
+
+async def save_uploaded_file(file: UploadFile, user_id: UUID) -> File:
     """
     Save the uploaded file to the user's directory and return the file path and name.
     """
@@ -30,8 +52,15 @@ async def save_uploaded_file(file: UploadFile, user_id: UUID) -> tuple[str, str]
             status_code=500,
             detail=f"Failed to save file: {str(e)}"
         )
+    
+    file = CreateFile(
+        file_path=str(file_path),
+    )
+
+    # Save file information to the database
+    file_id = await save_file_db(file)
         
-    return str(file_path), file.filename
+    return file_id, file
 
 
 async def delete_file(file_path: str) -> None:

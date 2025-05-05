@@ -16,7 +16,7 @@ router = APIRouter(
 
 settings = get_settings()
 
-@router.post("/register", response_model=User, dependencies=[Depends(validate_csrf_token)])
+@router.post("/register", response_model=User)
 async def register(user_create: UserCreate):
     """Register a new user."""
     try:

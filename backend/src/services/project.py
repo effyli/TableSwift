@@ -1,8 +1,8 @@
 from fastapi import HTTPException
 from uuid import uuid4, UUID
-from datetime import datetime
 from ..database import get_db
 from ..models.project import ProjectBase, ProjectCreate, Project
+from ..models.file import File
 
 
 async def create_project(project_data: ProjectCreate) -> ProjectBase:
@@ -11,13 +11,12 @@ async def create_project(project_data: ProjectCreate) -> ProjectBase:
         try:
             # Generate UUID for new project
             project_id = uuid4()
-            created_at = datetime.now()
 
             # Insert the project into the database
             conn.execute("""
-                INSERT INTO projects (id, name, file_path, user_id, created_at)
-                VALUES (?, ?, ?, ?, ?)
-            """, [project_id, project_data.name, project_data.file_path, project_data.user_id, created_at])
+                INSERT INTO projects (id, name, file_id, user_id)
+                VALUES (?, ?, ?, ?)
+            """, [project_id, project_data.name, project_data.file_id, project_data.user_id])
 
             # Return the created project
             return ProjectBase(
@@ -35,7 +34,7 @@ def get_user_projects(user_id: UUID) -> list[ProjectBase]:
     with get_db() as conn:
         try:
             results = conn.execute("""
-                SELECT id, name, file_path, user_id, created_at
+                SELECT id, name
                 FROM projects
                 WHERE user_id = ?
                 ORDER BY created_at DESC
@@ -59,9 +58,10 @@ async def get_user_project(project_id: UUID, user_id: UUID) -> Project:
     with get_db() as conn:
         try:
             result = conn.execute("""
-                SELECT id, name, file_path, user_id, created_at
-                FROM projects
-                WHERE id = ? AND user_id = ?
+                SELECT p.id, p.name, p.user_id, p.created_at, f.file_path
+                FROM projects p
+                JOIN files f ON p.file_id = f.id
+                WHERE p.id = ? AND p.user_id = ?
             """, [project_id, user_id]).fetchone()
             
             if not result:
@@ -73,9 +73,9 @@ async def get_user_project(project_id: UUID, user_id: UUID) -> Project:
             return Project(
                 id=result[0],
                 name=result[1],
-                file_path=result[2],
-                user_id=result[3],
-                created_at=result[4],
+                user_id=result[2],
+                created_at=result[3],
+                file=File(file_path=result[4])
             )
         except Exception as e:
             raise HTTPException(
@@ -86,11 +86,29 @@ async def get_user_project(project_id: UUID, user_id: UUID) -> Project:
 def delete_project(project_id: UUID, user_id: UUID) -> bool:
     with get_db() as conn:
         try:
-            result = conn.execute("""
+            file_result = conn.execute("""
+                DELETE FROM files
+                WHERE id = (
+                    SELECT file_id
+                    FROM projects
+                    WHERE id = ? AND user_id = ?
+                )
+            """, [project_id, user_id])
+            if file_result.rowcount == 0:
+                raise HTTPException(status_code=404, detail="File not found")
+
+
+            project_result = conn.execute("""
                 DELETE FROM projects
                 WHERE id = ? AND user_id = ?
             """, [project_id, user_id])
-            return result.rowcount > 0
+            if project_result.rowcount == 0:
+                raise HTTPException(status_code=404, detail="Project not found")
+
+            
+
+            return True
+
         except Exception as e:
             raise HTTPException(
                 status_code=500,
