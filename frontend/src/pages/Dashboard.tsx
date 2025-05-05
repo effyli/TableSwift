@@ -4,15 +4,9 @@ import { ActionHistory } from '../components/ActionHistory';
 import { ContentView } from '../components/ContentView';
 import { TopBar, ActiveView } from '../components/TopBar';
 
-interface Action {
-  id: string;
-  action: string;
-  column: string;
-  datetime: string;
-}
+import { Action } from '../types/action';
 
 export const Dashboard: React.FC = () => {
-  // Mobile view state
   const [activeView, setActiveView] = useState<ActiveView>('content');
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
@@ -69,12 +63,13 @@ export const Dashboard: React.FC = () => {
     console.log('New action clicked');
   };
 
-  const handleRevert = (actionId: string) => {
-    // Implement revert logic
-    console.log('Revert clicked for action:', actionId);
-  };
+  const handleRevert = () => {
+    // Implement revert action logic
+    console.log('Revert action clicked');
+  }
 
   return (
+    
     <div className="flex flex-col h-screen bg-black-lighter overflow-hidden">
       <TopBar 
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}

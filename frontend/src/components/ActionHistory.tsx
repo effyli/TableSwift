@@ -10,7 +10,7 @@ interface Action {
 interface ActionHistoryProps {
   actions: Action[];
   onNewAction: () => void;
-  onRevert: (actionId: string) => void;
+  onRevert: (action: Action) => void;
 }
 
 export const ActionHistory: React.FC<ActionHistoryProps> = ({
@@ -45,7 +45,7 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({
                 <td className="py-3">{action.datetime}</td>
                 <td className="py-3">
                   <button
-                    onClick={() => onRevert(action.id)}
+                    onClick={() => onRevert(action)}
                     className="text-indigo-500 hover:text-indigo-400"
                   >
                     Revert

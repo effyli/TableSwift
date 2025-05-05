@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Project } from '../services/project.service';
 import "../styles/components/Sidebar.css";
 import { FaRegTrashAlt } from "react-icons/fa";
 import { projectService } from '../services/project.service';
+import { ModalContext } from '../context/ModalContext';
 
 interface SidebarProps {
   isSidebarOpen: boolean;
@@ -15,6 +16,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setIsSidebarOpen,
   openProject
 }) => {
+    const { handleModal, hideModal } = useContext(ModalContext);
+
     const [uploadError, setUploadError] = useState<string|null>(null);
     const [projects, setProjects] = useState<Project[]>([]);
     const [isLoadingProjects, setIsLoadingProjects] = useState(false);
@@ -56,6 +59,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         } finally {
             setIsUploading(false);
         }
+    };
+
+    const handleDeleteProject = async (projectId: string) => {
+        console.log('Deleting project with ID:', projectId);
+        // try {
+        //     await projectService.deleteProject(projectId);
+        //     setProjects(prevProjects => prevProjects.filter(p => p.id !== projectId));
+        // } catch (error) {
+        //     console.error('Failed to delete project:', error);
+        // }
     };
 
   return (
@@ -138,7 +151,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                             {project.name}
                                         </span>
                                     </div>
-                                    <div className='opacity-0 group-hover:opacity-100 transition-opacity text-red'>
+                                    <div className='opacity-0 group-hover:opacity-100 transition-opacity text-red' onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleModal({
+                                            isOpen: true,
+                                            title: 'Delete Project',
+                                            message: `Are you sure you want to delete the project "${project.name}"? This action cannot be undone.`,
+                                            primaryButton: {
+                                                label: 'Delete',
+                                                isLoading: false,
+                                                onClick: async () => handleDeleteProject(project.id)
+                                            },
+                                            secondaryButton: {
+                                                label: 'Cancel',
+                                                onClick: () => hideModal()
+                                            }
+                                        });
+                                    }}>
                                         <FaRegTrashAlt />
                                     </div>
                                 </div>

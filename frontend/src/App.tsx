@@ -9,22 +9,25 @@ import { ProtectedRoutes } from './components/ProtectedRoutes';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { DiffViewer } from './pages/Diff';
+import { ModalProvider } from './context/ModalContext';
 
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/diff" element={<DiffViewer />} />
+      <ModalProvider>
+        <Router>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/diff" element={<DiffViewer />} />
 
-          <Route element={<ProtectedRoutes />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-          </Route>
+            <Route element={<ProtectedRoutes />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+            </Route>
 
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </Router>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </Router>
+      </ModalProvider>
     </AuthProvider>
   );
 }
