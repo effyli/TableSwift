@@ -1,18 +1,20 @@
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from ..dependencies import validate_token
-from ..services.project import create_project, save_uploaded_file, get_user_projects
+from ..services.project import create_project, get_user_projects, get_user_project, delete_project
+from ..services.file import save_uploaded_file, delete_file
 from ..dependencies.csrf import validate_csrf_token
-from ..models.project import ProjectCreate, Project
+from ..models.project import ProjectBase, ProjectCreate, Project
 from ..models.user import TokenData
-from typing import List, Annotated
+from typing import List
 import traceback
+from uuid import UUID
 
 router = APIRouter(
     prefix="/project",
     tags=["project"]
 )
 
-@router.post("/", dependencies=[Depends(validate_csrf_token)])
+@router.post("/", response_model=ProjectBase, dependencies=[Depends(validate_csrf_token)])
 async def generate_project(
     file: UploadFile = File(...),
     token_data: TokenData = Depends(validate_token)
@@ -43,9 +45,6 @@ async def generate_project(
                 status_code=400,
                 detail="File size too large. Maximum size is 10MB"
             )
-        
-        # Reset file position for later reading
-        await file.seek(0)
 
         # Save the file
         try:
@@ -75,15 +74,11 @@ async def generate_project(
             detail="Failed to create project"
         )
 
-@router.get("/", response_model=List[Project])
+
+@router.get("/", response_model=List[ProjectBase])
 async def list_projects(token_data: TokenData = Depends(validate_token)):
     """Get all projects for the current user."""
     try:
-        if not token_data.user_id:
-            raise HTTPException(
-                status_code=401,
-                detail="User ID is required"
-            )
         return get_user_projects(token_data.user_id)
     except HTTPException:
         raise
@@ -93,4 +88,45 @@ async def list_projects(token_data: TokenData = Depends(validate_token)):
         raise HTTPException(
             status_code=500,
             detail="Failed to fetch projects"
+        )
+    
+@router.delete("/{project_id}", response_model=dict, dependencies=[Depends(validate_csrf_token)])
+async def delete_project_endpoint(project_id: UUID, token_data: TokenData = Depends(validate_token)):
+    """Delete a specific project and its associated files."""
+    try:
+        if not token_data or not token_data.user_id:
+            raise HTTPException(
+                status_code=401,
+                detail="User authentication required"
+            )
+
+        # First, get the project to verify ownership and get file path
+        project = await get_user_project(project_id, token_data.user_id)
+        
+        try:
+            # First try to delete the file
+            await delete_file(project.file_path)
+            
+            # If file deletion successful, delete from database
+            delete_project(project_id, token_data.user_id)
+            
+            return {"status": "success", "message": "Project and associated files deleted successfully"}
+            
+        except Exception as e:
+            # If anything fails during deletion, raise an error
+            print(f"Error during project deletion: {str(e)}")
+            print(traceback.format_exc())
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to delete project or its files. No changes were made."
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in delete_project_endpoint: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail="An unexpected error occurred"
         )

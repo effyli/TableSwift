@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Project } from '../services/project.service';
+import { Project } from '../types/project';
 import "../styles/components/Sidebar.css";
 import { FaRegTrashAlt } from "react-icons/fa";
 import { projectService } from '../services/project.service';
@@ -63,12 +63,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     const handleDeleteProject = async (projectId: string) => {
         console.log('Deleting project with ID:', projectId);
-        // try {
-        //     await projectService.deleteProject(projectId);
-        //     setProjects(prevProjects => prevProjects.filter(p => p.id !== projectId));
-        // } catch (error) {
-        //     console.error('Failed to delete project:', error);
-        // }
+        try {
+            await projectService.deleteProject(projectId);
+            setProjects(prevProjects => prevProjects.filter(p => p.id !== projectId));
+            hideModal();
+        } catch (error) {
+            console.error('Failed to delete project:', error);
+        }
     };
 
   return (

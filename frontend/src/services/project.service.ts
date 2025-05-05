@@ -1,12 +1,5 @@
 import axiosInstance from "./axios.config";
-
-export interface Project {
-    id: string;
-    name: string;
-    file_path: string;
-    user_id: string;
-    created_at: string;
-}
+import { Project } from "../types/project";
 
 export const projectService = {
     async uploadFile(file: File): Promise<Project> {
@@ -48,15 +41,12 @@ export const projectService = {
             throw new Error('Failed to fetch projects');
         }
     },
-    
-    async getFile(fileId: string): Promise<Blob> {
+
+    async deleteProject(projectId: string): Promise<void> {
         try {
-            const response = await axiosInstance.get(`/files/${fileId}`, {
-                responseType: 'blob',
-            });
-            return response.data;
+            await axiosInstance.delete(`/project/${projectId}`);
         } catch (error) {
-            throw new Error('Failed to fetch file');
+            throw new Error('Failed to delete project');
         }
     },
 }
