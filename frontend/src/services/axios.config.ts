@@ -39,7 +39,6 @@ axiosInstance.interceptors.request.use(
                 throw new Error('CSRF token not found');
             }
 
-            console.log('Setting CSRF token:', csrfToken);
             config.headers['X-CSRF-Token'] = csrfToken;
             return config;
         } catch (error) {
@@ -56,7 +55,6 @@ axiosInstance.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
-        console.log('Error response:', error.response);
 
         // If error is CSRF related and we haven't retried yet
         if (
@@ -67,7 +65,6 @@ axiosInstance.interceptors.response.use(
             originalRequest._retry = true;
 
             try {
-                console.log('Retrying request with new CSRF token...');
                 await axios.get(`${API_URL}/csrf-token`, { withCredentials: true });
                 
                 return axiosInstance(originalRequest);

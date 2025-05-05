@@ -19,12 +19,33 @@ async def generate_project(
 ):
     """Create a new project with an uploaded file."""
     try:
+        # Validate file exists and has filename
+        if not file or not hasattr(file, 'filename') or not file.filename:
+            raise HTTPException(
+                status_code=400,
+                detail="No file uploaded or invalid file"
+            )
+
         # Validate file type (only allow CSV)
         if not file.filename.lower().endswith('.csv'):
             raise HTTPException(
                 status_code=400,
                 detail="Only CSV files are allowed"
             )
+
+        # Validate file size (10MB limit)
+        file_size = 0
+        MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+        content = await file.read(MAX_FILE_SIZE + 1)
+        file_size = len(content)
+        if file_size > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=400,
+                detail="File size too large. Maximum size is 10MB"
+            )
+        
+        # Reset file position for later reading
+        await file.seek(0)
 
         # Save the file
         try:

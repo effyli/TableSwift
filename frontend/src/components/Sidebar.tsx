@@ -7,29 +7,30 @@ import { projectService } from '../services/project.service';
 interface SidebarProps {
   isSidebarOpen: boolean;
   setIsSidebarOpen: (open: boolean) => void;
+  openProject: (projectId: string) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
   isSidebarOpen,
-  setIsSidebarOpen
+  setIsSidebarOpen,
+  openProject
 }) => {
     const [uploadError, setUploadError] = useState<string|null>(null);
     const [projects, setProjects] = useState<Project[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoadingProjects, setIsLoadingProjects] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
 
     // Fetch projects on mount
     useEffect(() => {
         const fetchProjects = async () => {
-            setIsLoading(true);
+            setIsLoadingProjects(true);
             try {
                 const projectsList = await projectService.getProjects();
                 setProjects(projectsList);
-                console.log('Fetched projects:', projectsList); 
             } catch (error) {
                 console.error('Failed to fetch projects:', error);
             } finally {
-                setIsLoading(false);
+                setIsLoadingProjects(false);
             }
         };
 
@@ -37,19 +38,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }, []);
 
     const handleFileSelect = async (file: File) => {
+        if (isUploading) return;
         setUploadError(null);
         setIsUploading(true);
 
-        // Validate file size (e.g., max 10MB)
-        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-        if (file.size > MAX_FILE_SIZE) {
-            setUploadError('File size too large. Maximum size is 10MB.');
-            setIsUploading(false);
-            return;
-        }
-
         try {
-            console.log('Uploading file:', file);
             const result = await projectService.uploadFile(file);
             setProjects(prevProjects => [result, ...prevProjects]);
             
@@ -91,15 +84,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         />
                         <label
                             htmlFor="file-upload"
-                            className={`w-full flex items-center justify-center px-4 py-6 border border-dotted rounded-lg hover:bg-black-lighter transition-colors cursor-pointer ${
+                            className={`w-full flex items-center justify-center px-4 py-6 border border-dotted rounded-lg hover:bg-black-lighter transition-colors ${
                                 uploadError ? 'border-red-500' : 'border-grey'
-                            }`}
+                            } ${isUploading ? 'cursor-wait opacity-50' : 'cursor-pointer'}`}
                         >
-                            <span className="mr-2 text-lg">+</span>
-                            <span className="text-gray-300">Select file</span>
+                            {isUploading ? (
+                                <>
+                                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-500 border-t-white mr-2"></div>
+                                    <span className="text-gray-300">Uploading...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="mr-2 text-lg">+</span>
+                                    <span className="text-gray-300">Select file</span>
+                                </>
+                            )}
                         </label>
                         <div className="mt-1 text-xs text-gray-500 px-1">
-                            Only supports CSV files
+                            Only supports CSV files of 10MB or less.
                         </div>
                         {uploadError && (
                             <div className="mt-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded text-red-500 text-sm animate-slideIn">
@@ -114,17 +116,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         Projects
                     </h2>
                     
-                    <div>
-                        {/* Example projects - replace with actual data */}
-                        {
-                            [...Array(100)].map((_, index) => (
-                                <div className='group flex gap-1 justify-between items-center text-gray-300 hover:bg-black-lighter px-3 py-3 rounded-lg cursor-pointer text-sm font-light' key={index}>
+                    {
+                    isLoadingProjects ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-500 border-t-white"></div>
+                    ) : (
+                        <div>
+                            {
+                            projects.length === 0 ? (
+                                <div className="text-gray-500 text-sm text-center py-4">
+                                    No projects available
+                                </div>
+                            ) : null
+                            }
+                            {(projects.length > 0) && projects.map((project, index) => (
+                                <div className='group flex gap-1 justify-between items-center text-gray-300 hover:bg-black-lighter px-3 py-3 rounded-lg cursor-pointer text-sm font-light' key={index} onClick={() => {openProject(project.id)}}>
                                     <div
                                         key={index}
                                         className="text-ellipsis overflow-hidden whitespace-nowrap text-nowrap"
                                     >
                                         <span>
-                                            project project project project {index + 1}
+                                            {project.name}
                                         </span>
                                     </div>
                                     <div className='opacity-0 group-hover:opacity-100 transition-opacity text-red'>
@@ -132,8 +143,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                     </div>
                                 </div>
                             ))
-                        }
-                    </div>
+                            }
+                        </div>
+                    )
+                    }
                 </div>            
             </div>
         </div>

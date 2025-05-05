@@ -59,6 +59,11 @@ export const Dashboard: React.FC = () => {
     ],
   });
 
+  const openProject = (projectId: string) => {
+    // Implement project opening logic
+    console.log('Open project with ID:', projectId);
+  }
+
   const handleNewAction = () => {
     // Implement new action logic
     console.log('New action clicked');
@@ -83,6 +88,7 @@ export const Dashboard: React.FC = () => {
         <Sidebar 
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
+          openProject={openProject}
         />
 
         {/* Main content area */}
