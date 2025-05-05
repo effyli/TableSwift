@@ -3,7 +3,7 @@ from typing import Optional
 from ..database import get_db
 from ..config import get_settings
 from ..models.user import UserCreate, User
-from ..services.auth import get_password_hash
+from .auth import get_password_hash
 
 
 settings = get_settings()
@@ -22,7 +22,7 @@ def create_user(user_create: UserCreate) -> User:
             raise ValueError("Email already registered")
         
         # Create new user
-        user_id = str(uuid.uuid4())
+        user_id = uuid.uuid4()
         hashed_password = get_password_hash(user_create.password)
         
         conn.execute("""

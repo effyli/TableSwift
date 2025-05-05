@@ -39,10 +39,9 @@ def create_access_token(data: dict) -> str:
 def verify_access_token(token: str):
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        content = payload.get("sub")
-        if content is None:
+        if payload is None:
             raise InvalidTokenError("Invalid token")
-        return content
+        return payload
     except jwt.ExpiredSignatureError:
         raise InvalidTokenError("Token has expired")
     except jwt.JWTError:

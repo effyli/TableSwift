@@ -49,7 +49,6 @@ export const Dashboard: React.FC = () => {
     },
   ]);
 
-  const [uploadError, setUploadError] = useState<string|null>(null);
   const [fileData] = useState({
     name: 'file.csv',
     rowCount: 358,
@@ -59,28 +58,6 @@ export const Dashboard: React.FC = () => {
       { id: 3, start_date: '2025-03-01', end_date: '2025-12-31', value: 300 },
     ],
   });
-
-  const handleFileSelect = async (file: File) => {
-    setUploadError(null);
-
-    // Validate file size (e.g., max 10MB)
-    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-    if (file.size > MAX_FILE_SIZE) {
-      setUploadError('File size too large. Maximum size is 10MB.');
-      return;
-    }
-
-    // Create FormData
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    try {
-      console.log('Selected file:', file.name);
-    } catch (error) {
-      console.error('Upload error:', error);
-      setUploadError(error instanceof Error ? error.message : 'Failed to upload file');
-    }
-  };
 
   const handleNewAction = () => {
     // Implement new action logic
@@ -104,8 +81,6 @@ export const Dashboard: React.FC = () => {
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         <Sidebar 
-          onFileSelect={handleFileSelect}
-          uploadError={uploadError}
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
         />

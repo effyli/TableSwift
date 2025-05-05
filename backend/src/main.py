@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 import traceback
 
 from .config import get_settings
-from .routers import auth, users
+from .routers import auth, users, project
 
 app = FastAPI()
 
@@ -37,6 +37,7 @@ app.add_middleware(
 # include your routers
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(project.router)
 
 
 @app.get("/")

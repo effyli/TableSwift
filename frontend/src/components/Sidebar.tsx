@@ -1,20 +1,70 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Project } from '../services/project.service';
 import "../styles/components/Sidebar.css";
 import { FaRegTrashAlt } from "react-icons/fa";
+import { projectService } from '../services/project.service';
 
 interface SidebarProps {
-  onFileSelect: (file: File) => void;
-  uploadError?: string|null;
   isSidebarOpen: boolean;
   setIsSidebarOpen: (open: boolean) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
-  onFileSelect, 
-  uploadError, 
   isSidebarOpen,
   setIsSidebarOpen
 }) => {
+    const [uploadError, setUploadError] = useState<string|null>(null);
+    const [projects, setProjects] = useState<Project[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+
+    // Fetch projects on mount
+    useEffect(() => {
+        const fetchProjects = async () => {
+            setIsLoading(true);
+            try {
+                const projectsList = await projectService.getProjects();
+                setProjects(projectsList);
+                console.log('Fetched projects:', projectsList); 
+            } catch (error) {
+                console.error('Failed to fetch projects:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchProjects();
+    }, []);
+
+    const handleFileSelect = async (file: File) => {
+        setUploadError(null);
+        setIsUploading(true);
+
+        // Validate file size (e.g., max 10MB)
+        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+        if (file.size > MAX_FILE_SIZE) {
+            setUploadError('File size too large. Maximum size is 10MB.');
+            setIsUploading(false);
+            return;
+        }
+
+        try {
+            console.log('Uploading file:', file);
+            const result = await projectService.uploadFile(file);
+            setProjects(prevProjects => [result, ...prevProjects]);
+            
+            // On mobile, close sidebar after successful upload
+            if (window.innerWidth < 1024) {
+                setIsSidebarOpen(false);
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            setUploadError(error instanceof Error ? error.message : 'Failed to upload file');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
   return (
     <>
         <div className={`
@@ -34,7 +84,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             className="hidden"
                             onChange={(e) => {
                                 if (e.target.files && e.target.files.length > 0) {
-                                    onFileSelect(e.target.files[0]);
+                                    handleFileSelect(e.target.files[0]);
                                 }
                             }}
                             accept=".csv"

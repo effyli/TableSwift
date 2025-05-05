@@ -13,11 +13,19 @@ def init_db():
     with get_db() as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS users (
-                id VARCHAR PRIMARY KEY,
+                id UUID PRIMARY KEY,
                 email VARCHAR UNIQUE NOT NULL,
                 hashed_password VARCHAR NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
+            );
+            CREATE TABLE IF NOT EXISTS projects (
+                id UUID PRIMARY KEY,
+                name VARCHAR NOT NULL,
+                file_path VARCHAR NOT NULL,
+                user_id UUID NOT NULL,
+                created_at TIMESTAMP NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            );       
         """)
 
 @contextmanager

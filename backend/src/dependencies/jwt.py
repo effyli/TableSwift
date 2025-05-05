@@ -1,4 +1,5 @@
 from fastapi import Request, HTTPException, status
+from uuid import UUID
 from ..services.auth import verify_access_token
 from ..models.user import TokenData
 
@@ -13,9 +14,25 @@ def validate_token(request: Request) -> TokenData:
                 detail="Not authenticated",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        user_email = verify_access_token(token)
-        return TokenData(email=user_email)
-    except:
+            
+        # Verify and decode the token
+        data = verify_access_token(token)
+        
+        # Extract user data from the token payload
+        if not data.get("id") or not data.get("email"):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token data",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+            
+        # Convert string id back to UUID
+        return TokenData(user_id=UUID(data["id"]), email=data["email"])
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Token validation error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",

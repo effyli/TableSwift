@@ -4,7 +4,7 @@ from fastapi.responses import Response
 from typing import Annotated
 from ..models.user import UserCreate, User
 from ..services.auth import authenticate_user, create_access_token
-from ..services.user import create_user
+from ..services.users import create_user
 from ..config import get_settings
 from ..dependencies import validate_csrf_token
 import traceback
@@ -43,7 +43,11 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    access_token = create_access_token(data={"sub": user.email})
+    # Create token with user data directly in the payload, converting UUID to string
+    access_token = create_access_token({
+        "id": str(user.id),  # Convert UUID to string
+        "email": user.email
+    })
     response.set_cookie(
         key="access_token",
         value=f"{access_token}",
