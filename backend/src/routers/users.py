@@ -9,19 +9,6 @@ router = APIRouter(
     prefix="/users",
     tags=["users"]
 )
-
-@router.get("/", response_model=List[User], dependencies=[Depends(validate_token)])
-async def list_users():
-    """Get all users from the database. Protected by JWT validation."""
-    try:
-        return get_all_users()
-    except Exception as e:
-        print(f"Error in list_users: {str(e)}")
-        print(traceback.format_exc())
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error fetching users"
-        )
     
 @router.get("/me", response_model=User)
 async def get_user(token_data: TokenData = Depends(validate_token)):

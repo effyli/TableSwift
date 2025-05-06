@@ -14,13 +14,4 @@ export const userService = {
             throw error;
         }
     },
-
-    async getAllUsers(): Promise<User[]> {
-        try {
-            const response = await axiosInstance.get('/users');
-            return response.data;
-        } catch (error) {
-            throw error;
-        }
-    },
 }
