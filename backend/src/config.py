@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     
     # CSRF settings
     CSRF_SECRET_KEY: str
+    
+    # Redis settings
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+    REDIS_DB: int = 0
+    CACHE_TTL: int = 300  # 5 minutes in seconds
 
     class Config:
         env_file = ".env"

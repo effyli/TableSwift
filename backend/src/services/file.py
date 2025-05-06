@@ -3,6 +3,7 @@ from uuid import uuid4, UUID
 from pathlib import Path
 import os
 import asyncio
+import pandas as pd
 from ..models.file import CreateFile, File
 from ..database import get_db
 
@@ -112,4 +113,68 @@ async def delete_file(file_path: str) -> None:
         raise HTTPException(
             status_code=500,
             detail=f"Failed to delete file: {str(e)}"
+        )
+
+
+async def get_file_data(file_path: str, limit: int = 20, offset: int = 0) -> tuple[list, int]:
+    """
+    Read a portion of the CSV file data.
+    Returns a tuple of (data_rows, total_rows).
+    """
+    try:
+        # Read the CSV file
+        df = pd.read_csv(file_path)
+        total_rows = len(df)
+        
+        # Get the requested portion
+        data = df.iloc[offset:offset + limit].to_dict('records')
+        
+        return {
+            "data": data,
+            "total_rows": total_rows,
+            "loaded_rows": len(data)
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to read file data: {str(e)}"
+        )
+
+
+async def search_file_data(file_path: str, search_term: str, limit: int = 20, offset: int = 0):
+    """
+    Search CSV file data for rows matching the search term.
+    Returns matching rows with pagination and total count.
+    """
+    try:
+        # Read the CSV file
+        df = pd.read_csv(file_path)
+        
+        # Convert search term to lowercase for case-insensitive search
+        search_term = search_term.lower()
+        
+        # Function to check if any column in a row contains the search term
+        def row_matches_search(row):
+            return any(
+                str(value).lower().find(search_term) != -1
+                for value in row
+            )
+        
+        # Apply the search filter
+        matching_df = df[df.apply(row_matches_search, axis=1)]
+        total_matches = len(matching_df)
+        
+        # Get the requested portion
+        paginated_df = matching_df.iloc[offset:offset + limit]
+        data = paginated_df.to_dict('records')
+        
+        return {
+            "data": data,
+            "total_rows": total_matches,
+            "loaded_rows": len(data)
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to search file data: {str(e)}"
         )

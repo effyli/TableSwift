@@ -1,9 +1,9 @@
+import { File } from './file';
+
 export interface Project {
     id: string;
     name: string;
-}
-
-export interface ProjectItem extends Project {
-    file_path: string;
+    file: File;
+    user_id: string;
     created_at: string;
 }

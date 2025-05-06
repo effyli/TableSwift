@@ -1,13 +1,16 @@
 import axiosInstance from "./axios.config";
 import { Project } from "../types/project";
 
+const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024; // 10MB in bytes
+const DEFAULT_PAGE_SIZE = 20;
+
 export const projectService = {
     async uploadFile(file: File): Promise<Project> {
         try {
             // Validate file size client-side first
-            const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-            if (file.size > MAX_FILE_SIZE) {
-                throw new Error('File size too large. Maximum size is 10MB');
+            if (file.size > MAX_FILE_SIZE_BYTES) {
+                throw new Error(`File size too large. Maximum size is ${MAX_FILE_SIZE_MB}MB`);
             }
 
             // Validate file type
@@ -47,6 +50,50 @@ export const projectService = {
             await axiosInstance.delete(`/project/${projectId}`);
         } catch (error) {
             throw new Error('Failed to delete project');
+        }
+    },
+
+    async getProjectDetails(projectId: string): Promise<Project> {
+        try {
+            const response = await axiosInstance.get<Project>(`/project/${projectId}`);
+            return response.data;
+        } catch (error) {
+            throw new Error('Failed to fetch project details');
+        }
+    },
+
+    async loadMoreRows(projectId: string, offset: number, limit: number = DEFAULT_PAGE_SIZE): Promise<{
+        data: Record<string, any>[];
+        total_rows: number;
+        loaded_rows: number;
+    }> {
+        try {
+            const response = await axiosInstance.get(`/project/${projectId}/data`, {
+                params: { offset, limit }
+            });
+            return response.data;
+        } catch (error) {
+            throw new Error('Failed to load more rows');
+        }
+    },
+
+    async searchProjectData(
+        projectId: string,
+        query: string,
+        offset: number = 0,
+        limit: number = DEFAULT_PAGE_SIZE
+    ): Promise<{
+        data: Record<string, any>[];
+        total_rows: number;
+        loaded_rows: number;
+    }> {
+        try {
+            const response = await axiosInstance.get(`/project/${projectId}/search`, {
+                params: { query, offset, limit }
+            });
+            return response.data;
+        } catch (error) {
+            throw new Error('Failed to search project data');
         }
     },
 }

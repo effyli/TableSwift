@@ -4,12 +4,29 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi_csrf_protect import CsrfProtect
 from fastapi_csrf_protect.exceptions import CsrfProtectError
 from fastapi.responses import JSONResponse
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.redis import RedisBackend
+from redis import asyncio as aioredis
 import traceback
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from .config import get_settings
 from .routers import auth, users, project
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    """Initialize FastAPI-Cache with Redis backend on startup."""
+    settings = get_settings()
+    redis_url = f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}"
+    redis = aioredis.from_url(redis_url, encoding="utf8", decode_responses=True)
+    FastAPICache.init(RedisBackend(redis), prefix="tableswift-cache")
+    yield
+    await redis.close()
+
+
+app = FastAPI(lifespan=lifespan)
 
 settings = get_settings()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")

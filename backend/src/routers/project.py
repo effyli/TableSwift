@@ -1,18 +1,22 @@
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Query
 from ..dependencies import validate_token
 from ..services.project import create_project, get_user_projects, get_user_project, delete_project
-from ..services.file import save_uploaded_file, delete_file
+from ..services.file import save_uploaded_file, delete_file, get_file_data, search_file_data
 from ..dependencies.csrf import validate_csrf_token
-from ..models.project import ProjectBase, ProjectCreate
+from ..models.project import ProjectBase, ProjectCreate, Project
 from ..models.user import TokenData
 from typing import List
 import traceback
 from uuid import UUID
+from fastapi_cache import FastAPICache
+from fastapi_cache.decorator import cache
 
 router = APIRouter(
     prefix="/project",
     tags=["project"]
 )
+
+LIMIT = 20
 
 @router.post("/", response_model=ProjectBase, dependencies=[Depends(validate_csrf_token)])
 async def generate_project(
@@ -109,6 +113,9 @@ async def delete_project_endpoint(project_id: UUID, token_data: TokenData = Depe
             print(f"Attempting to delete file at {project.file.file_path}")
             await delete_file(project.file.file_path)
             
+            # Clear cache for the project
+            await FastAPICache.clear(namespace="{project_id}")
+            
             # If file deletion successful, delete from database
             delete_project(project.id, token_data.user_id)
 
@@ -131,4 +138,129 @@ async def delete_project_endpoint(project_id: UUID, token_data: TokenData = Depe
         raise HTTPException(
             status_code=500,
             detail="An unexpected error occurred"
+        )
+
+@router.get("/{project_id}", response_model=Project)
+async def get_project_details(project_id: UUID, token_data: TokenData = Depends(validate_token)):
+    """Get detailed project information including file data."""
+    try:
+        if not token_data or not token_data.user_id:
+            raise HTTPException(
+                status_code=401,
+                detail="User authentication required"
+            )
+
+        # Get project with file info
+        project = await get_user_project(project_id, token_data.user_id)
+        
+        # Get file data with pagination
+        try:
+            file_data = await get_file_data(project.file.file_path)
+            project.file.data = file_data["data"]
+            project.file.total_rows = file_data["total_rows"]
+            project.file.loaded_rows = file_data["loaded_rows"]
+        except Exception as e:
+            print(f"Error reading file data: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to read file data"
+            )
+        
+        return project
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in get_project_details: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to fetch project details"
+        )
+
+@router.get("/{project_id}/data", response_model=dict)
+@cache(namespace="{project_id}", expire=60)
+async def get_project_data(
+    project_id: UUID,
+    offset: int,
+    limit: int = LIMIT,
+    token_data: TokenData = Depends(validate_token)
+):
+    """Get paginated project file data."""
+    try:
+        if not token_data or not token_data.user_id:
+            raise HTTPException(
+                status_code=401,
+                detail="User authentication required"
+            )
+
+        # Get project to verify ownership and get file path
+        project = await get_user_project(project_id, token_data.user_id)
+        
+        # If not in cache, get file data with pagination
+        try:
+            file_data = await get_file_data(project.file.file_path, limit=limit, offset=offset)
+            return file_data
+        except Exception as e:
+            print(f"Error reading file data: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to read file data"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in get_project_data: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to fetch project data"
+        )
+
+@router.get("/{project_id}/search")
+@cache(namespace="{project_id}", expire=60)
+async def search_project_data(
+    project_id: UUID,
+    query: str = Query(..., description="Search term to filter rows"),
+    offset: int = Query(0, description="Number of rows to skip"),
+    limit: int = Query(LIMIT, description="Number of rows to return"),
+    token_data: TokenData = Depends(validate_token)
+):
+    """Search project data for rows matching the query term."""
+    try:
+        if not token_data or not token_data.user_id:
+            raise HTTPException(
+                status_code=401,
+                detail="User authentication required"
+            )
+
+        # Get project to verify ownership and get file path
+        project = await get_user_project(project_id, token_data.user_id)
+        
+        # If not in cache, perform the search
+        try:
+            search_results = await search_file_data(
+                project.file.file_path,
+                query,
+                limit=limit,
+                offset=offset
+            )
+            return search_results
+            
+        except Exception as e:
+            print(f"Error searching file data: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to search file data"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in search_project_data: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to search project data"
         )

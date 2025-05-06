@@ -1,7 +1,11 @@
-#sidebar-projects {
+.custom-scrollbar {
     scrollbar-color: var(--color-grey) transparent;
     scrollbar-width: thin;
-    overflow-y: auto;
+    overflow: auto;
+}
+
+#sidebar-projects {
+    composes: custom-scrollbar;
     overflow-x: hidden;
 }
 
