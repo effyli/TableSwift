@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import Split from 'react-split'
 import { Sidebar } from '../components/Sidebar';
 import { ActionHistory } from '../components/ActionHistory';
 import { ContentView } from '../components/ContentView';
@@ -7,6 +8,7 @@ import { TopBar, ActiveView } from '../components/TopBar';
 import { Project } from '../types/project';
 import { File } from '../types/file';
 import { projectService } from '../services/project.service';
+import '../styles/components/Split.css';
 
 export const Dashboard: React.FC = () => {
   const [activeView, setActiveView] = useState<ActiveView>('content');
@@ -90,25 +92,44 @@ export const Dashboard: React.FC = () => {
             </div>
           ) : projectId && project ? (
             <>
-              {/* Action History - hidden on mobile when content view is active */}
-              <div className={`
-                ${isMobile ? (activeView === 'actions' ? 'flex' : 'hidden') : 'flex'}
-                lg:flex flex-col flex-1
-              `}>
-                <ActionHistory />
-              </div>
+              {isMobile ? (
+                // Mobile view - switch between views
+                <>
+                  {/* Action History - hidden on mobile when content view is active */}
+                  <div className={`${activeView === 'actions' ? 'flex' : 'hidden'} flex-col flex-1`}>
+                    <ActionHistory />
+                  </div>
 
-              {/* Content View - hidden on mobile when actions view is active */}
-              <div className={`
-                ${isMobile ? (activeView === 'content' ? 'flex' : 'hidden') : 'flex'}
-                flex-1 min-w-0
-              `}>
-                <ContentView 
-                  file={project.file} 
-                  projectId={projectId} 
-                  onDataUpdate={handleFileDataUpdate}
-                />
-              </div>
+                  {/* Content View - hidden on mobile when actions view is active */}
+                  <div className={`${activeView === 'content' ? 'flex' : 'hidden'} flex-1 min-w-0`}>
+                    <ContentView 
+                      file={project.file} 
+                      projectId={projectId} 
+                      onDataUpdate={handleFileDataUpdate}
+                    />
+                  </div>
+                </>
+              ) : (
+                // Desktop view - split view with drag resize
+                <Split 
+                  className="flex flex-1 w-full"
+                  sizes={[50, 50]}
+                  minSize={300}
+                  gutterSize={4}
+                  snapOffset={0}
+                >
+                  <div className="flex flex-col overflow-auto">
+                    <ActionHistory />
+                  </div>
+                  <div className="flex flex-col overflow-auto min-w-0">
+                    <ContentView 
+                      file={project.file} 
+                      projectId={projectId} 
+                      onDataUpdate={handleFileDataUpdate}
+                    />
+                  </div>
+                </Split>
+              )}
             </>
           ) : (
             <div className="flex flex-1 items-center justify-center text-gray-500">
