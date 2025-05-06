@@ -9,12 +9,14 @@ interface SidebarProps {
   isSidebarOpen: boolean;
   setIsSidebarOpen: (open: boolean) => void;
   openProject: (projectId: string) => void;
+  selectedProjectId?: string;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
   isSidebarOpen,
   setIsSidebarOpen,
-  openProject
+  openProject,
+  selectedProjectId
 }) => {
     const { handleModal, hideModal } = useContext(ModalContext);
 
@@ -143,7 +145,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             ) : null
                             }
                             {(projects.length > 0) && projects.map((project, index) => (
-                                <div className='group flex gap-1 justify-between items-center text-gray-300 hover:bg-black-lighter px-3 py-3 rounded-lg cursor-pointer text-sm font-light' key={index} onClick={() => {openProject(project.id)}}>
+                                <div 
+                                    className={`group flex gap-1 justify-between items-center text-gray-300 px-3 py-3 rounded-lg cursor-pointer text-sm font-light
+                                        ${selectedProjectId === project.id ? 'bg-black-lighter text-white' : 'hover:bg-black-lighter'}`}
+                                    key={index} 
+                                    onClick={() => {openProject(project.id)}}
+                                >
                                     <div
                                         key={index}
                                         className="text-ellipsis overflow-hidden whitespace-nowrap text-nowrap"

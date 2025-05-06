@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { ActionHistory } from '../components/ActionHistory';
 import { ContentView } from '../components/ContentView';
 import { TopBar, ActiveView } from '../components/TopBar';
 
-import { Action } from '../types/action';
-
 export const Dashboard: React.FC = () => {
   const [activeView, setActiveView] = useState<ActiveView>('content');
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  const { projectId } = useParams();
+  const navigate = useNavigate();
 
   // Listen for window resize
   useEffect(() => {
@@ -22,54 +23,13 @@ export const Dashboard: React.FC = () => {
     };
   }, []);
 
-  const [actions, setActions] = useState<Action[]>([
-    {
-      id: '1',
-      action: 'Transformation',
-      column: 'Start_date',
-      datetime: '12:33 13-03-2025',
-    },
-    {
-      id: '2',
-      action: 'Transformation',
-      column: 'End_date',
-      datetime: '13:28 13-03-2025',
-    },
-    {
-      id: '3',
-      action: 'Transformation',
-      column: 'Value',
-      datetime: '14:44 13-03-2025',
-    },
-  ]);
-
-  const [fileData] = useState({
-    name: 'file.csv',
-    rowCount: 358,
-    data: [
-      { id: 1, start_date: '2025-01-01', end_date: '2025-12-31', value: 100 },
-      { id: 2, start_date: '2025-02-01', end_date: '2025-12-31', value: 200 },
-      { id: 3, start_date: '2025-03-01', end_date: '2025-12-31', value: 300 },
-    ],
-  });
-
   const openProject = (projectId: string) => {
-    // Implement project opening logic
-    console.log('Open project with ID:', projectId);
+    navigate(`/dashboard/${projectId}`);
   }
 
-  const handleNewAction = () => {
-    // Implement new action logic
-    console.log('New action clicked');
-  };
-
-  const handleRevert = () => {
-    // Implement revert action logic
-    console.log('Revert action clicked');
-  }
+  
 
   return (
-    
     <div className="flex flex-col h-screen bg-black-lighter overflow-hidden">
       <TopBar 
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -84,33 +44,34 @@ export const Dashboard: React.FC = () => {
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
           openProject={openProject}
+          selectedProjectId={projectId}
         />
 
         {/* Main content area */}
         <div className="flex flex-1 flex-col lg:flex-row min-w-0">
-          {/* Action History - hidden on mobile when content view is active */}
-          <div className={`
-            ${isMobile ? (activeView === 'actions' ? 'flex' : 'hidden') : 'flex'}
-            lg:flex flex-col flex-1
-          `}>
-            <ActionHistory
-              actions={actions}
-              onNewAction={handleNewAction}
-              onRevert={handleRevert}
-            />
-          </div>
+          {projectId ? (
+            <>
+              {/* Action History - hidden on mobile when content view is active */}
+              <div className={`
+                ${isMobile ? (activeView === 'actions' ? 'flex' : 'hidden') : 'flex'}
+                lg:flex flex-col flex-1
+              `}>
+                <ActionHistory />
+              </div>
 
-          {/* Content View - hidden on mobile when actions view is active */}
-          <div className={`
-            ${isMobile ? (activeView === 'content' ? 'flex' : 'hidden') : 'flex'}
-            flex-1 min-w-0
-          `}>
-            <ContentView
-              fileName={fileData.name}
-              rowCount={fileData.rowCount}
-              data={fileData.data}
-            />
-          </div>
+              {/* Content View - hidden on mobile when actions view is active */}
+              <div className={`
+                ${isMobile ? (activeView === 'content' ? 'flex' : 'hidden') : 'flex'}
+                flex-1 min-w-0
+              `}>
+                <ContentView />
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-1 items-center justify-center text-gray-500">
+              <p>Select a project from the sidebar to get started</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,22 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 
-interface ContentViewProps {
-  fileName: string;
-  rowCount: number;
-  data: any[];
-}
+interface ContentViewProps {}
 
-export const ContentView: React.FC<ContentViewProps> = ({
-  fileName,
-  rowCount,
-  data,
-}) => {
+export const ContentView: React.FC<ContentViewProps> = () => {
+
+  const [fileData] = useState({
+    name: 'file.csv',
+    rowCount: 358,
+    data: [
+      { id: 1, start_date: '2025-01-01', end_date: '2025-12-31', value: 100 },
+      { id: 2, start_date: '2025-02-01', end_date: '2025-12-31', value: 200 },
+      { id: 3, start_date: '2025-03-01', end_date: '2025-12-31', value: 300 },
+    ],
+  });
+  
   return (
     <div className="bg-black min-h-0 h-full p-4 flex-1 flex flex-col">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <span className="text-gray-400 mr-4">{fileName}</span>
-          <span className="text-gray-500">{rowCount} rows</span>
+          <span className="text-gray-400 mr-4">{fileData.name}</span>
+          <span className="text-gray-500">{fileData.rowCount} rows</span>
         </div>
         <div className="relative flex-1 max-w-md ml-4">
           <input
@@ -38,7 +41,7 @@ export const ContentView: React.FC<ContentViewProps> = ({
             </tr>
           </thead>
           <tbody className="text-gray-300">
-            {data.map((row, index) => (
+            {fileData.data.map((row, index) => (
               <tr key={index} className="border-b border-black-lighter">
                 <td className="p-3">{row.id}</td>
                 <td className="p-3">{row.start_date}</td>

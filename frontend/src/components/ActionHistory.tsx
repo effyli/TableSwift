@@ -1,27 +1,45 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Action } from '../types/action';
 
-interface Action {
-  id: string;
-  action: string;
-  column: string;
-  datetime: string;
-}
+interface ActionHistoryProps {}
 
-interface ActionHistoryProps {
-  actions: Action[];
-  onNewAction: () => void;
-  onRevert: (action: Action) => void;
-}
+export const ActionHistory: React.FC<ActionHistoryProps> = () => {
+  
+   const [actions] = useState<Action[]>([
+      // {
+      //   id: '1',
+      //   action: 'Transformation',
+      //   column: 'Start_date',
+      //   datetime: '12:33 13-03-2025',
+      // },
+      // {
+      //   id: '2',
+      //   action: 'Transformation',
+      //   column: 'End_date',
+      //   datetime: '13:28 13-03-2025',
+      // },
+      // {
+      //   id: '3',
+      //   action: 'Transformation',
+      //   column: 'Value',
+      //   datetime: '14:44 13-03-2025',
+      // },
+    ]);
 
-export const ActionHistory: React.FC<ActionHistoryProps> = ({
-  actions,
-  onNewAction,
-  onRevert,
-}) => {
+  const handleNewAction = () => {
+    // Implement new action logic
+    console.log('New action clicked');
+  };
+
+  const handleRevert = () => {
+    // Implement revert action logic
+    console.log('Revert action clicked');
+  }
+
   return (
     <div className="bg-black-light border-r border-black-lighter min-h-0 h-full p-4 overflow-y-auto flex-1 flex flex-col">
       <button
-        onClick={onNewAction}
+        onClick={handleNewAction}
         className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors mb-6 flex items-center justify-center"
       >
         <span className="mr-2">+</span> New action
@@ -45,7 +63,7 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({
                 <td className="py-3">{action.datetime}</td>
                 <td className="py-3">
                   <button
-                    onClick={() => onRevert(action)}
+                    onClick={() => handleRevert()}
                     className="text-indigo-500 hover:text-indigo-400"
                   >
                     Revert
