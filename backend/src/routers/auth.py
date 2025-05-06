@@ -16,13 +16,13 @@ router = APIRouter(
 
 settings = get_settings()
 
-@router.post("/register", response_model=User)
+@router.post("/register", response_model=User, dependencies=[Depends(validate_csrf_token)])
 async def register(user_create: UserCreate):
     """Register a new user."""
     try:
         return create_user(user_create)
     except ValueError as e:
-        print(f"Error in list_users: {str(e)}")
+        print(f"Error in register: {str(e)}")
         print(traceback.format_exc())
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
