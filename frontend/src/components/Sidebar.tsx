@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Project } from '../types/project';
+import { useNavigate } from 'react-router-dom';
+import { ProjectSidebar } from '../types/project';
 import "../styles/components/Sidebar.css";
 import { FaRegTrashAlt } from "react-icons/fa";
 import { projectService } from '../services/project.service';
@@ -21,12 +22,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const { handleModal, hideModal } = useContext(ModalContext);
 
     const [uploadError, setUploadError] = useState<string|null>(null);
-    const [projects, setProjects] = useState<Project[]>([]);
+    const [projects, setProjects] = useState<ProjectSidebar[]>([]);
     const [isLoadingProjects, setIsLoadingProjects] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
+    const navigate = useNavigate();
 
-    // Fetch projects on mount
     useEffect(() => {
+        // Fetch projects on mount in the sidebar
         const fetchProjects = async () => {
             setIsLoadingProjects(true);
             try {
@@ -56,6 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             if (window.innerWidth < 1024) {
                 setIsSidebarOpen(false);
             }
+            navigate(`/dashboard/${result.id}`);
         } catch (error) {
             console.error('Upload error:', error);
             setUploadError(error instanceof Error ? error.message : 'Failed to upload file');

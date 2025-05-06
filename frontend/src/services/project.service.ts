@@ -1,12 +1,12 @@
 import axiosInstance from "./axios.config";
-import { Project } from "../types/project";
+import { Project, ProjectSidebar } from "../types/project";
 
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024; // 10MB in bytes
 const DEFAULT_PAGE_SIZE = 20;
 
 export const projectService = {
-    async uploadFile(file: File): Promise<Project> {
+    async uploadFile(file: File): Promise<ProjectSidebar> {
         try {
             // Validate file size client-side first
             if (file.size > MAX_FILE_SIZE_BYTES) {
@@ -21,7 +21,7 @@ export const projectService = {
             const formData = new FormData();
             formData.append('file', file);
     
-            const response = await axiosInstance.post<Project>('/project/', formData, {
+            const response = await axiosInstance.post<ProjectSidebar>('/project/', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
@@ -36,9 +36,9 @@ export const projectService = {
         }
     },
     
-    async getProjects(): Promise<Project[]> {
+    async getProjects(): Promise<ProjectSidebar[]> {
         try {
-            const response = await axiosInstance.get<Project[]>('/project');
+            const response = await axiosInstance.get<ProjectSidebar[]>('/project');
             return response.data;
         } catch (error) {
             throw new Error('Failed to fetch projects');
