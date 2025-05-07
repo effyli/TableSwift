@@ -3,16 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Action, ActionUpdate } from '../types/action';
 import { Operation } from '../types/operation';
 import { actionService } from '../services/action.service';
-import { operationService } from '../services/operation.service';
 
 interface SingleActionProps {
     action: Action | null;
     onActionUpdate: (action: Action | null) => void;
-    setOperations: (operations: Operation[]) => void;
     operations: Operation[];
 }
 
-export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpdate, setOperations, operations }) => {
+export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpdate, operations }) => {
   const { projectId, actionId } = useParams();
   const navigate = useNavigate();
   const [selectedOperation, setSelectedOperation] = useState<number | null>(action?.operation?.id || null);
@@ -22,18 +20,6 @@ export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpda
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load operations only when needed
-    if (!operations || operations.length === 0) {
-      setIsLoading(true);
-      operationService.getOperations().then((ops) => {
-          setOperations(ops);
-          setIsLoading(false);
-      }).catch((error) => {
-          setError('Failed to load operations');
-          console.error('Error loading operations:', error);
-      });
-    }
-
     // Load the action only when needed
     if (!action && actionId || action && action!.id !== parseInt(actionId!)) {
         onActionUpdate(null);

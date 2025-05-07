@@ -11,6 +11,7 @@ import { File } from '../types/file';
 import { Action } from '../types/action';
 import { Operation } from '../types/operation';
 import { projectService } from '../services/project.service';
+import { operationService } from '../services/operation.service';
 import '../styles/components/Split.css';
 
 export const Dashboard: React.FC = () => {
@@ -48,7 +49,19 @@ export const Dashboard: React.FC = () => {
       console.error('Failed to load project:', error);
     }).finally(() => {
       setIsLoading(false);
+    
+      // Load operations only when needed and project is loaded
+      if (!operations || operations.length === 0) {
+        setIsLoading(true);
+        operationService.getOperations().then((ops) => {
+            setOperations(ops);
+            setIsLoading(false);
+        }).catch((error) => {
+            console.error('Error loading operations:', error);
+        });
+      }
     });
+
   }, [projectId]);
 
   const openProject = (projectId: string) => {
@@ -56,10 +69,22 @@ export const Dashboard: React.FC = () => {
   };
 
   const handleSetActionUpdate = (action: Action | null) => {
-    if (project) {
+    if (project && action) {
+      // Update the ActionBase list item as well
+      const updatedActions = project.actions.map(a => 
+        a.id === action.id ? {
+          id: action.id,
+          project_id: action.project_id,
+          datetime: action.datetime,
+          operation: action.operation,
+          file_column: action.file_column
+        } : a
+      );
+      
       setProject({
         ...project,
-        active_action: action
+        active_action: action,
+        actions: updatedActions
       });
     }
   };
@@ -108,7 +133,6 @@ export const Dashboard: React.FC = () => {
                       <SingleAction
                         action={project.active_action}
                         onActionUpdate={handleSetActionUpdate}
-                        setOperations={setOperations}
                         operations={operations}
                       />
                     ) : (
@@ -141,7 +165,6 @@ export const Dashboard: React.FC = () => {
                       <SingleAction
                         action={project.active_action}
                         onActionUpdate={handleSetActionUpdate}
-                        setOperations={setOperations}
                         operations={operations}
                       />
                     ) : (
