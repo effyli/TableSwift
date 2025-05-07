@@ -8,34 +8,37 @@ interface SingleActionProps {
     action: Action | null | undefined;
     onActionUpdate: (action: Action | null) => void;
     operations: Operation[];
+    fileColumns: string[];
 }
 
-export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpdate, operations }) => {
+export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpdate, operations, fileColumns }) => {
   const { projectId, actionId } = useParams();
   const navigate = useNavigate();
   const [selectedOperation, setSelectedOperation] = useState<number | null>(action?.operation?.id || null);
   const [fileColumn, setFileColumn] = useState(action?.file_column || '');
   const [description, setDescription] = useState(action?.description || '');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Load the action only when needed
-    if (!action && actionId || action && action!.id !== parseInt(actionId!)) {
-        onActionUpdate(null);
-        setIsLoading(true);
+    if ((!action && actionId) || (action && action.id !== parseInt(actionId ?? ''))) {
+      onActionUpdate(null);
+      setIsLoading(true);
       
-        actionService.getAction(parseInt(actionId!)).then((actionData) => {
-            onActionUpdate(actionData);
-        }).catch((error) => {
-            setError('Failed to load action');
-            console.error('Error loading action:', error);
-        }).finally(() => {
-            setIsLoading(false);
-        });
+      actionService.getAction(parseInt(actionId!)).then((actionData) => {
+        onActionUpdate(actionData);
+      }).catch((error) => {
+        setError('Failed to load action');
+        console.error('Error loading action:', error);
+      }).finally(() => {
+        setIsLoading(false);
+      });
+    } else {
+      setIsLoading(false);
     }
   }, []);
-
+  
   // Update all form fields when action changes
   useEffect(() => {
     if (action) {
@@ -78,7 +81,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpda
 
   const handleBack = () => {
     if (projectId) {
-        navigate(`/dashboard/${projectId}`);
+      navigate(`/dashboard/${projectId}`);
     }
   };
 
@@ -127,13 +130,18 @@ export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpda
             <label className="block text-sm font-medium text-gray-400 mb-1">
               Column
             </label>
-            <input
-              type="text"
-              value={fileColumn}
-              onChange={(e) => setFileColumn(e.target.value)}
+            <select
               className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
-              placeholder="Enter column name"
-            />
+              value={fileColumn || ''}
+              onChange={(e) => setFileColumn(e.target.value)}
+            >
+              <option value="">Select a column</option>
+              {fileColumns.map((col, index) => (
+                <option key={index} value={col}>
+                  {col}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -143,7 +151,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpda
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
+              className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500 max-h-[300px] min-h-[100px]"
               placeholder="Enter action description"
               rows={4}
             />

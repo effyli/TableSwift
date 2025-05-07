@@ -18,9 +18,12 @@ export const Dashboard: React.FC = () => {
   const [activeView, setActiveView] = useState<ActiveView>('content');
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
-  const [project, setProject] = useState<Project | null>(null);
   const [isLoadingProject, setIsLoadingProject] = useState(true);
+
+  const [project, setProject] = useState<Project | null>(null);
   const [operations, setOperations] = useState<Operation[]>([]);
+  const [fileColumns, setFileColumns] = useState<string[]>([]);
+  
   const { projectId, actionId } = useParams();
   const navigate = useNavigate();
 
@@ -43,8 +46,9 @@ export const Dashboard: React.FC = () => {
     }
 
     setIsLoadingProject(true);
-    projectService.getProjectDetails(projectId).then((projectData) => {
+    projectService.getProjectDetails(projectId, actionId).then((projectData) => {
       setProject(projectData);
+      setFileColumns(projectData?.file?.data?.[0] ? Object.keys(projectData.file.data[0]) : []);
     }).catch((error) => {
       console.error('Failed to load project:', error);
     }).finally(() => {
@@ -131,6 +135,7 @@ export const Dashboard: React.FC = () => {
                         action={project?.active_action}
                         onActionUpdate={handleSetActionUpdate}
                         operations={operations}
+                        fileColumns={fileColumns}
                       />
                     ) : (
                       <ActionHistory
@@ -165,6 +170,7 @@ export const Dashboard: React.FC = () => {
                         action={project?.active_action}
                         onActionUpdate={handleSetActionUpdate}
                         operations={operations}
+                        fileColumns={fileColumns}
                       />
                     ) : (
                       <ActionHistory

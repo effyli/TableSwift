@@ -79,6 +79,28 @@ async def get_project_actions(project_id: UUID) -> list[ActionBase]:
 def update_action(action_id: int, action_update: ActionUpdate) -> Action:
     """Update an action with new data."""
     with get_db() as conn:
+        # First get the project id and file path for this action
+        action = conn.execute("""
+            SELECT a.project_id, f.file_path
+            FROM actions a
+            JOIN projects p ON a.project_id = p.id
+            JOIN files f ON p.file_id = f.id
+            WHERE a.id = ?
+        """, [action_id]).fetchone()
+
+        if not action:
+            raise ValueError("Action not found")
+
+        # Read the first row of the CSV file to get column headers
+        import pandas as pd
+        df = pd.read_csv(action[1], nrows=1)
+        columns = df.columns.tolist()
+
+        # Check if the specified column exists
+        if action_update.file_column and action_update.file_column not in columns:
+            raise ValueError(f"Column '{action_update.file_column}' not found in file. Available columns: {', '.join(columns)}")
+
+        # If validation passes, update the action
         conn.execute("""
             UPDATE actions
             SET operation_id = ?, file_column = ?, description = ?

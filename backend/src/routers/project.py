@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Query, 
 from ..dependencies import validate_token
 from ..services.project import create_project, get_user_projects, get_user_project, delete_project
 from ..services.file import save_uploaded_file, delete_file, get_file_data, search_file_data
+from ..services.action import get_project_actions, get_action
 from ..dependencies.csrf import validate_csrf_token
 from ..models.project import ProjectBase, ProjectCreate, Project
 from ..models.user import TokenData
@@ -10,7 +11,6 @@ import traceback
 from uuid import UUID
 from fastapi_cache import FastAPICache
 from fastapi_cache.decorator import cache
-from ..services.action import get_project_actions
 
 
 router = APIRouter(
@@ -143,7 +143,11 @@ async def delete_project_endpoint(project_id: UUID, token_data: TokenData = Depe
         )
 
 @router.get("/{project_id}", response_model=Project)
-async def get_project_details(project_id: UUID, token_data: TokenData = Depends(validate_token)):
+async def get_project_details(
+    project_id: UUID,
+    actionId: str = Query(None, description="Optional ID of the active action"),
+    token_data: TokenData = Depends(validate_token)
+):
     """Get detailed project information including file data."""
     try:
         if not token_data or not token_data.user_id:
@@ -157,6 +161,16 @@ async def get_project_details(project_id: UUID, token_data: TokenData = Depends(
 
         # Get actions list for project
         project.actions = await get_project_actions(project.id)
+        
+        # If actionId is provided, get the active action
+        if actionId and actionId.isdigit():
+            try:
+                action = get_action(int(actionId))
+                if str(action.project_id) == str(project_id):  # Verify the action belongs to this project
+                    project.active_action = action
+            except ValueError:
+                # If action not found or doesn't belong to project, ignore it
+                pass
         
         # Get file data with pagination
         try:

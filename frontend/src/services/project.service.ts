@@ -53,9 +53,9 @@ export const projectService = {
         }
     },
 
-    async getProjectDetails(projectId: string): Promise<Project> {
+    async getProjectDetails(projectId: string, actionId: string | undefined): Promise<Project> {
         try {
-            const response = await axiosInstance.get<Project>(`/project/${projectId}`);
+            const response = await axiosInstance.get<Project>(`/project/${projectId}?actionId=${actionId}`);
             return response.data;
         } catch (error) {
             throw new Error('Failed to fetch project details');

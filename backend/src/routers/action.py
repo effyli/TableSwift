@@ -43,9 +43,15 @@ async def update_single_action(action_id: int, action_update: ActionUpdate, _: T
     try:
         return update_action(action_id, action_update)
     except ValueError as e:
-        print(f"Error in list_projects: {str(e)}")
+        # For known validation errors
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        print(f"Error updating action: {str(e)}")
         print(traceback.format_exc())
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            detail="Failed to update action"
         )
