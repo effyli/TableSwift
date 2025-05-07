@@ -12,7 +12,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from .config import get_settings
-from .routers import auth, users, project
+from .routers import auth, users, project, action, operation
 
 
 @asynccontextmanager
@@ -55,6 +55,8 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(project.router)
+app.include_router(action.router)
+app.include_router(operation.router)
 
 
 @app.get("/")

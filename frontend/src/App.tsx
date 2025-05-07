@@ -23,6 +23,7 @@ function App() {
             <Route element={<ProtectedRoutes />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/dashboard/:projectId" element={<Dashboard />} />
+              <Route path="/dashboard/:projectId/:actionId" element={<Dashboard />} />
             </Route>
 
             <Route path="/" element={<Navigate to="/dashboard" replace />} />

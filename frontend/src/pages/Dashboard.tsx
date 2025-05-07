@@ -3,10 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Split from 'react-split'
 import { Sidebar } from '../components/Sidebar';
 import { ActionHistory } from '../components/ActionHistory';
+import { SingleAction } from '../components/SingleAction';
 import { ContentView } from '../components/ContentView';
 import { TopBar, ActiveView } from '../components/TopBar';
 import { Project } from '../types/project';
 import { File } from '../types/file';
+import { Action } from '../types/action';
+import { Operation } from '../types/operation';
 import { projectService } from '../services/project.service';
 import '../styles/components/Split.css';
 
@@ -16,7 +19,8 @@ export const Dashboard: React.FC = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [project, setProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { projectId } = useParams();
+  const [operations, setOperations] = useState<Operation[]>([]);
+  const { projectId, actionId } = useParams();
   const navigate = useNavigate();
 
   // Listen for window resize
@@ -30,31 +34,34 @@ export const Dashboard: React.FC = () => {
     };
   }, []);
 
-  // Load project data when projectId changes
   useEffect(() => {
-    const loadProject = async () => {
-      if (!projectId) {
-        setProject(null);
-        return;
-      }
+    // Load project data when projectId changes
+    if (!projectId) {
+      setProject(null);
+      return;
+    }
 
-      setIsLoading(true);
-      try {
-        const projectData = await projectService.getProjectDetails(projectId);
-        setProject(projectData);
-      } catch (error) {
-        console.error('Failed to load project:', error);
-        // TODO: Show error message to user
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadProject();
+    setIsLoading(true);
+    projectService.getProjectDetails(projectId).then((projectData) => {
+      setProject(projectData);
+    }).catch((error) => {
+      console.error('Failed to load project:', error);
+    }).finally(() => {
+      setIsLoading(false);
+    });
   }, [projectId]);
 
   const openProject = (projectId: string) => {
     navigate(`/dashboard/${projectId}`);
+  };
+
+  const handleSetActionUpdate = (action: Action | null) => {
+    if (project) {
+      setProject({
+        ...project,
+        active_action: action
+      });
+    }
   };
 
   const handleFileDataUpdate = (newFile: File) => {
@@ -95,9 +102,20 @@ export const Dashboard: React.FC = () => {
               {isMobile ? (
                 // Mobile view - switch between views
                 <>
-                  {/* Action History - hidden on mobile when content view is active */}
+                  {/* Action History or Single Action - hidden on mobile when content view is active */}
                   <div className={`${activeView === 'actions' ? 'flex' : 'hidden'} flex-col flex-1`}>
-                    <ActionHistory />
+                    {actionId ? (
+                      <SingleAction
+                        action={project.active_action}
+                        onActionUpdate={handleSetActionUpdate}
+                        setOperations={setOperations}
+                        operations={operations}
+                      />
+                    ) : (
+                      <ActionHistory
+                        actions={project.actions}
+                      />
+                    )}
                   </div>
 
                   {/* Content View - hidden on mobile when actions view is active */}
@@ -119,7 +137,18 @@ export const Dashboard: React.FC = () => {
                   snapOffset={0}
                 >
                   <div className="flex flex-col overflow-auto">
-                    <ActionHistory />
+                    {actionId ? (
+                      <SingleAction
+                        action={project.active_action}
+                        onActionUpdate={handleSetActionUpdate}
+                        setOperations={setOperations}
+                        operations={operations}
+                      />
+                    ) : (
+                      <ActionHistory
+                        actions={project.actions}
+                      />
+                    )}
                   </div>
                   <div className="flex flex-col overflow-auto min-w-0">
                     <ContentView 

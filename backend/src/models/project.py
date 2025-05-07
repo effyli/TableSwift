@@ -2,6 +2,8 @@ from pydantic import BaseModel
 from datetime import datetime
 from uuid import UUID
 from .file import CreateFile, File
+from typing import Optional, List
+from .action import Action, ActionBase
 
 class ProjectBase(BaseModel):
     id: UUID
@@ -17,6 +19,8 @@ class ProjectCreate(BaseModel):
         from_attributes = True
 
 class Project(ProjectBase):
+    actions: List[ActionBase] = []
+    active_action: Optional[Action] = None
     file: File
     user_id: UUID
     created_at: datetime

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Query
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Query, status
 from ..dependencies import validate_token
 from ..services.project import create_project, get_user_projects, get_user_project, delete_project
 from ..services.file import save_uploaded_file, delete_file, get_file_data, search_file_data
@@ -10,6 +10,8 @@ import traceback
 from uuid import UUID
 from fastapi_cache import FastAPICache
 from fastapi_cache.decorator import cache
+from ..services.action import get_project_actions
+
 
 router = APIRouter(
     prefix="/project",
@@ -55,7 +57,7 @@ async def generate_project(
             file_id, file_obj = await save_uploaded_file(file, token_data.user_id)
         except Exception as e:
             raise HTTPException(
-                status_code=500,
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to save file: {str(e)}"
             )
         
@@ -75,7 +77,7 @@ async def generate_project(
         print(f"Error in create_project: {str(e)}")
         print(traceback.format_exc())
         raise HTTPException(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create project"
         )
 
@@ -91,7 +93,7 @@ async def list_projects(token_data: TokenData = Depends(validate_token)):
         print(f"Error in list_projects: {str(e)}")
         print(traceback.format_exc())
         raise HTTPException(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch projects"
         )
     
@@ -126,7 +128,7 @@ async def delete_project_endpoint(project_id: UUID, token_data: TokenData = Depe
             print(f"Error during project deletion: {str(e)}")
             print(traceback.format_exc())
             raise HTTPException(
-                status_code=500,
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to delete project or its files. No changes were made."
             )
             
@@ -136,7 +138,7 @@ async def delete_project_endpoint(project_id: UUID, token_data: TokenData = Depe
         print(f"Error in delete_project_endpoint: {str(e)}")
         print(traceback.format_exc())
         raise HTTPException(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred"
         )
 
@@ -152,6 +154,9 @@ async def get_project_details(project_id: UUID, token_data: TokenData = Depends(
 
         # Get project with file info
         project = await get_user_project(project_id, token_data.user_id)
+
+        # Get actions list for project
+        project.actions = await get_project_actions(project.id)
         
         # Get file data with pagination
         try:
@@ -162,7 +167,7 @@ async def get_project_details(project_id: UUID, token_data: TokenData = Depends(
         except Exception as e:
             print(f"Error reading file data: {str(e)}")
             raise HTTPException(
-                status_code=500,
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to read file data"
             )
         
@@ -174,7 +179,7 @@ async def get_project_details(project_id: UUID, token_data: TokenData = Depends(
         print(f"Error in get_project_details: {str(e)}")
         print(traceback.format_exc())
         raise HTTPException(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch project details"
         )
 
@@ -204,7 +209,7 @@ async def get_project_data(
         except Exception as e:
             print(f"Error reading file data: {str(e)}")
             raise HTTPException(
-                status_code=500,
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to read file data"
             )
             
@@ -214,7 +219,7 @@ async def get_project_data(
         print(f"Error in get_project_data: {str(e)}")
         print(traceback.format_exc())
         raise HTTPException(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch project data"
         )
 
@@ -251,7 +256,7 @@ async def search_project_data(
         except Exception as e:
             print(f"Error searching file data: {str(e)}")
             raise HTTPException(
-                status_code=500,
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to search file data"
             )
             
@@ -261,6 +266,6 @@ async def search_project_data(
         print(f"Error in search_project_data: {str(e)}")
         print(traceback.format_exc())
         raise HTTPException(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to search project data"
         )

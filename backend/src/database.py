@@ -23,8 +23,27 @@ def get_db():
 def init_db():
     """Initialize the database: sequence + tables."""
     with get_db() as conn:
+        # Create sequences for all tables
         conn.execute("""
             CREATE SEQUENCE IF NOT EXISTS file_id_seq
+            START WITH 1
+            INCREMENT BY 1;
+        """)
+        
+        conn.execute("""
+            CREATE SEQUENCE IF NOT EXISTS operation_id_seq
+            START WITH 1
+            INCREMENT BY 1;
+        """)
+        
+        conn.execute("""
+            CREATE SEQUENCE IF NOT EXISTS action_id_seq
+            START WITH 1
+            INCREMENT BY 1;
+        """)
+        
+        conn.execute("""
+            CREATE SEQUENCE IF NOT EXISTS label_id_seq
             START WITH 1
             INCREMENT BY 1;
         """)
@@ -54,6 +73,62 @@ def init_db():
                 file_id INTEGER NOT NULL,
                 user_id UUID NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS operations (
+                id INTEGER PRIMARY KEY 
+                    DEFAULT nextval('operation_id_seq'),
+                name VARCHAR NOT NULL
+            );
+        """)
+
+        # Insert default operations if they don't exist
+        operations = [
+            "Transformation",
+            "Error Detection",
+            "Data Imputation",
+            "Entity Matching"
+        ]
+        for operation in operations:
+            conn.execute("""
+                INSERT INTO operations (name)
+                SELECT ? WHERE NOT EXISTS (
+                    SELECT 1 FROM operations WHERE name = ?
+                );
+            """, [operation, operation])
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS actions (
+                id INTEGER PRIMARY KEY
+                    DEFAULT nextval('action_id_seq'),
+                operation_id INTEGER,
+                file_column VARCHAR,
+                description VARCHAR,
+                datetime TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                project_id UUID,
+                file_id INTEGER
+            );
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS labels (
+                id INTEGER PRIMARY KEY
+                    DEFAULT nextval('label_id_seq'),
+                json VARCHAR NOT NULL,
+                version INTEGER NOT NULL,
+                action_id INTEGER NOT NULL
+            );
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS codes (
+                id INTEGER PRIMARY KEY
+                    DEFAULT nextval('code_id_seq'),
+                code VARCHAR NOT NULL,
+                version INTEGER NOT NULL,
+                label_id INTEGER NOT NULL
             );
         """)
 
