@@ -34,14 +34,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             try {
                 const projectsList = await projectService.getProjects();
                 console.log('Fetched projects:', projectsList);
-                setTimeout(() => {
-                    setIsLoadingProjects(false);
-                }, 3000);
                 setProjects(projectsList);
             } catch (error) {
                 console.error('Failed to fetch projects:', error);
             } finally {
-                // setIsLoadingProjects(false);
+                setIsLoadingProjects(false);
             }
         };
 

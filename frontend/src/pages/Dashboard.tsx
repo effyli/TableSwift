@@ -48,20 +48,17 @@ export const Dashboard: React.FC = () => {
     }).catch((error) => {
       console.error('Failed to load project:', error);
     }).finally(() => {
-      setTimeout(() => {
-        setIsLoadingProject(false);
-      }
-      , 3000); // Simulate loading time
-      // setIsLoadingProject(false);
+      setIsLoadingProject(false);
     
       // Load operations only when needed and project is loaded
       if (!operations || operations.length === 0) {
         setIsLoadingProject(true);
         operationService.getOperations().then((ops) => {
             setOperations(ops);
-            // setIsLoadingProject(false);
         }).catch((error) => {
             console.error('Error loading operations:', error);
+        }).finally(() => {
+            setIsLoadingProject(false);
         });
       }
     });

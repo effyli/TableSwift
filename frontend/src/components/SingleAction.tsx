@@ -27,14 +27,11 @@ export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpda
       
         actionService.getAction(parseInt(actionId!)).then((actionData) => {
             onActionUpdate(actionData);
-            setTimeout(() => {
-                setIsLoading(false);
-            }
-            , 3000); // Simulate loading time
-            // setIsLoading(false);
         }).catch((error) => {
             setError('Failed to load action');
             console.error('Error loading action:', error);
+        }).finally(() => {
+            setIsLoading(false);
         });
     }
   }, []);
