@@ -81,14 +81,6 @@ export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpda
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-500 border-t-transparent"></div>
-      </div>
-    );
-  }
-
   return (
     <div className="bg-black-light border-r border-black-lighter p-4 h-full flex flex-col">
       <div className="flex items-center mb-6">
@@ -98,7 +90,6 @@ export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpda
         >
           ← Back to Actions
         </button>
-        <h2 className="text-lg font-semibold">Edit Action</h2>
       </div>
 
       {error && (
@@ -107,59 +98,65 @@ export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpda
         </div>
       )}
 
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-400 mb-1">
-            Operation
-          </label>
-          <select
-            value={selectedOperation || ''}
-            onChange={(e) => setSelectedOperation(e.target.value ? parseInt(e.target.value) : null)}
-            className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
+      {isLoading ? (
+        <div className="flex items-center justify-center h-full">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-500 border-t-transparent"></div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-1">
+              Operation
+            </label>
+            <select
+              value={selectedOperation || ''}
+              onChange={(e) => setSelectedOperation(e.target.value ? parseInt(e.target.value) : null)}
+              className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
+            >
+              <option value="">Select an operation</option>
+              {operations.map((op) => (
+                <option key={op.id} value={op.id}>
+                  {op.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-1">
+              Column
+            </label>
+            <input
+              type="text"
+              value={fileColumn}
+              onChange={(e) => setFileColumn(e.target.value)}
+              className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
+              placeholder="Enter column name"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-1">
+              Description
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
+              placeholder="Enter action description"
+              rows={4}
+            />
+          </div>
+
+          <button
+            onClick={handleSave}
+            disabled={isLoading || !selectedOperation}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
           >
-            <option value="">Select an operation</option>
-            {operations.map((op) => (
-              <option key={op.id} value={op.id}>
-                {op.name}
-              </option>
-            ))}
-          </select>
+            {isLoading ? 'Saving...' : 'Save Action'}
+          </button>
         </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-400 mb-1">
-            Column
-          </label>
-          <input
-            type="text"
-            value={fileColumn}
-            onChange={(e) => setFileColumn(e.target.value)}
-            className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
-            placeholder="Enter column name"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-400 mb-1">
-            Description
-          </label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
-            placeholder="Enter action description"
-            rows={4}
-          />
-        </div>
-
-        <button
-          onClick={handleSave}
-          disabled={isLoading || !selectedOperation}
-          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-        >
-          {isLoading ? 'Saving...' : 'Save Action'}
-        </button>
-      </div>
+      )}
     </div>
   );
 };
