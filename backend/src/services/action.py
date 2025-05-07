@@ -3,6 +3,8 @@ from ..models.action import ActionBase, Action, ActionCreate, ActionUpdate
 from ..models.operation import Operation
 from ..database import get_db
 from uuid import UUID
+import pandas as pd
+
 
 def create_action(action_create: ActionCreate) -> ActionBase:
     """Create a new action in the database."""
@@ -75,9 +77,9 @@ async def get_project_actions(project_id: UUID) -> list[ActionBase]:
             )
             for row in results
         ]
+    
 
-def update_action(action_id: int, action_update: ActionUpdate) -> Action:
-    """Update an action with new data."""
+def check_column_exists(action_id: int, column_name: str) -> bool:
     with get_db() as conn:
         # First get the project id and file path for this action
         action = conn.execute("""
@@ -92,18 +94,31 @@ def update_action(action_id: int, action_update: ActionUpdate) -> Action:
             raise ValueError("Action not found")
 
         # Read the first row of the CSV file to get column headers
-        import pandas as pd
         df = pd.read_csv(action[1], nrows=1)
         columns = df.columns.tolist()
 
         # Check if the specified column exists
-        if action_update.file_column and action_update.file_column not in columns:
-            raise ValueError(f"Column '{action_update.file_column}' not found in file. Available columns: {', '.join(columns)}")
+        if column_name and column_name not in columns:
+            raise ValueError(f"Column '{column_name}' not found in file. Available columns: {', '.join(columns)}")
 
-        # If validation passes, update the action
+
+def update_action(action_id: int, action_update: ActionUpdate) -> Action:
+    """Update an action with new data."""
+    with get_db() as conn:
+        # Check if the action exists
+        try:
+            check_column_exists(action_id, action_update.file_column)
+        except ValueError as e:
+            # If the column does not exist, raise an error
+            raise ValueError(f"Validation error: {str(e)}")
+
+        # If validation passes, update the action with current datetime
         conn.execute("""
             UPDATE actions
-            SET operation_id = ?, file_column = ?, description = ?
+            SET operation_id = ?, 
+                file_column = ?, 
+                description = ?, 
+                datetime = CURRENT_TIMESTAMP
             WHERE id = ?
         """, [
             action_update.operation_id,

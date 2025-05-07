@@ -18,6 +18,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpda
   const [fileColumn, setFileColumn] = useState(action?.file_column || '');
   const [description, setDescription] = useState(action?.description || '');
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingSaving, setIsLoadingSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -59,7 +60,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpda
       return;
     }
 
-    setIsLoading(true);
+    setIsLoadingSaving(true);
     try {
       const actionUpdate: ActionUpdate = {
         id: parseInt(actionId),
@@ -75,7 +76,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpda
       setError('Failed to save action');
       console.error('Error saving action:', error);
     } finally {
-      setIsLoading(false);
+      setIsLoadingSaving(false);
     }
   };
 
@@ -86,14 +87,23 @@ export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpda
   };
 
   return (
-    <div className="bg-black-light border-r border-black-lighter p-4 h-full flex flex-col">
-      <div className="flex items-center mb-6">
+    <div className="bg-black-light border-r border-black-lighter p-4 h-full flex flex-col overflow-auto">
+      <div className="sticky top-0 flex items-center mb-6 justify-between">
         <button
           onClick={handleBack}
           className="text-indigo-500 hover:text-indigo-400 mr-4"
         >
           ← Back to Actions
         </button>
+        {!isLoading && (
+          <button
+            onClick={handleSave}
+            disabled={isLoadingSaving || !selectedOperation}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {isLoadingSaving ? 'Saving...' : 'Save Action'}
+          </button>  
+        )}
       </div>
 
       {error && (
@@ -108,40 +118,42 @@ export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpda
         </div>
       ) : (
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-400 mb-1">
-              Operation
-            </label>
-            <select
-              value={selectedOperation || ''}
-              onChange={(e) => setSelectedOperation(e.target.value ? parseInt(e.target.value) : null)}
-              className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
-            >
-              <option value="">Select an operation</option>
-              {operations.map((op) => (
-                <option key={op.id} value={op.id}>
-                  {op.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <div className='grid grid-cols-2 gap-4'>
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1">
+                Operation
+              </label>
+              <select
+                value={selectedOperation || ''}
+                onChange={(e) => setSelectedOperation(e.target.value ? parseInt(e.target.value) : null)}
+                className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
+              >
+                <option value="">Select an operation</option>
+                {operations.map((op) => (
+                  <option key={op.id} value={op.id}>
+                    {op.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-400 mb-1">
-              Column
-            </label>
-            <select
-              className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
-              value={fileColumn || ''}
-              onChange={(e) => setFileColumn(e.target.value)}
-            >
-              <option value="">Select a column</option>
-              {fileColumns.map((col, index) => (
-                <option key={index} value={col}>
-                  {col}
-                </option>
-              ))}
-            </select>
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1">
+                Column
+              </label>
+              <select
+                className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
+                value={fileColumn || ''}
+                onChange={(e) => setFileColumn(e.target.value)}
+              >
+                <option value="">Select a column</option>
+                {fileColumns.map((col, index) => (
+                  <option key={index} value={col}>
+                    {col}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div>
@@ -158,11 +170,11 @@ export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpda
           </div>
 
           <button
-            onClick={handleSave}
-            disabled={isLoading || !selectedOperation}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+            onClick={() => {console.log('Generate labels clicked');}}
+            disabled={isLoadingSaving || !selectedOperation}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
           >
-            {isLoading ? 'Saving...' : 'Save Action'}
+            {isLoadingSaving ? 'Generating labels...' : 'Generate labels'}
           </button>
         </div>
       )}
