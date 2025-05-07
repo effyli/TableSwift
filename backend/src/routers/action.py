@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from ..models.action import Action, ActionCreate, ActionUpdate, ActionBase
-from ..models.user import User, TokenData
-from ..services.action import create_action, get_action, get_project_actions, update_action
+from ..models.user import TokenData
+from ..services.action import create_action, get_action, update_action, delete_action
 from ..dependencies import validate_token
 from ..dependencies.csrf import validate_csrf_token
 import traceback
@@ -54,4 +54,24 @@ async def update_single_action(action_id: int, action_update: ActionUpdate, _: T
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update action"
+        )
+    
+@router.delete("/{action_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_single_action(action_id: int, _: TokenData = Depends(validate_token)):
+    try:
+        delete_action(action_id)
+        return {"message": "Action deleted successfully"}
+    except ValueError as e:
+        print(f"Error in delete_single_action: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        print(f"Error in delete_single_action: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete action"
         )

@@ -153,7 +153,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                     className={`group flex gap-1 justify-between items-center text-gray-300 px-3 py-3 rounded-lg cursor-pointer text-sm font-light
                                         ${selectedProjectId === project.id ? 'bg-black-lighter text-white' : 'hover:bg-black-lighter'}`}
                                     key={index} 
-                                    onClick={() => {openProject(project.id)}}
+                                    onClick={() => {openProject(project.id); setIsSidebarOpen(false);}}
                                 >
                                     <div
                                         key={index}

@@ -8,7 +8,7 @@ import { ContentView } from '../components/ContentView';
 import { TopBar, ActiveView } from '../components/TopBar';
 import { Project } from '../types/project';
 import { File } from '../types/file';
-import { Action } from '../types/action';
+import { Action, ActionBase } from '../types/action';
 import { Operation } from '../types/operation';
 import { projectService } from '../services/project.service';
 import { operationService } from '../services/operation.service';
@@ -94,6 +94,15 @@ export const Dashboard: React.FC = () => {
     }
   };
 
+  const handleActionListUpdate = (actions: ActionBase[] | null) => {
+    if (project) {
+      setProject({
+        ...project,
+        actions: actions || []
+      });
+    }
+  };
+
   const handleFileDataUpdate = (newFile: File) => {
     if (project) {
       setProject({
@@ -140,6 +149,7 @@ export const Dashboard: React.FC = () => {
                     ) : (
                       <ActionHistory
                         actions={project?.actions}
+                        onActionListUpdate={handleActionListUpdate}
                         isLoadingProject={isLoadingProject}
                       />
                     )}
@@ -175,6 +185,7 @@ export const Dashboard: React.FC = () => {
                     ) : (
                       <ActionHistory
                         actions={project?.actions}
+                        onActionListUpdate={handleActionListUpdate}
                         isLoadingProject={isLoadingProject}
                       />
                     )}

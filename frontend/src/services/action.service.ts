@@ -27,5 +27,13 @@ export const actionService = {
         } catch (error) {
             throw new Error('Failed to update action');
         }
-    }
+    },
+
+    async deleteAction(actionId: number): Promise<void> {
+        try {
+            await axiosInstance.delete(`/action/${actionId}`);
+        } catch (error) {
+            throw new Error('Failed to delete action');
+        }
+    },
 };

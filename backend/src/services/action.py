@@ -128,3 +128,35 @@ def update_action(action_id: int, action_update: ActionUpdate) -> Action:
         ])
         
         return get_action(action_id)
+    
+def delete_action(action_id: int) -> None:
+    """Delete an action and its related data by its ID."""
+    with get_db() as conn:
+        # Check if the action exists and is reverted
+        action = conn.execute("""
+            SELECT file_id FROM actions WHERE id = ?
+        """, [action_id]).fetchone()
+        
+        if not action:
+            raise ValueError("Action not found")
+        if action[0] is not None:
+            raise ValueError("Action cannot be deleted because it is not reverted yet")
+
+        # First delete codes linked to this action's labels
+        conn.execute("""
+            DELETE FROM codes 
+            WHERE label_id IN (
+                SELECT id FROM labels WHERE action_id = ?
+            )
+        """, [action_id])
+
+        # Then delete the labels
+        conn.execute("""
+            DELETE FROM labels WHERE action_id = ?
+        """, [action_id])
+
+        # Finally delete the action itself
+        conn.execute("""
+            DELETE FROM actions WHERE id = ?
+        """, [action_id])
+        return None
