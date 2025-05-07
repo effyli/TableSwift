@@ -5,7 +5,7 @@ import { Operation } from '../types/operation';
 import { actionService } from '../services/action.service';
 
 interface SingleActionProps {
-    action: Action | null;
+    action: Action | null | undefined;
     onActionUpdate: (action: Action | null) => void;
     operations: Operation[];
 }
@@ -27,7 +27,11 @@ export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpda
       
         actionService.getAction(parseInt(actionId!)).then((actionData) => {
             onActionUpdate(actionData);
-            setIsLoading(false);
+            setTimeout(() => {
+                setIsLoading(false);
+            }
+            , 3000); // Simulate loading time
+            // setIsLoading(false);
         }).catch((error) => {
             setError('Failed to load action');
             console.error('Error loading action:', error);
@@ -50,8 +54,8 @@ export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpda
   }, [action]);
 
   const handleSave = async () => {
-    if (!actionId || !selectedOperation) {
-      setError('Please select an operation');
+    if (!actionId || !selectedOperation || !fileColumn || !description) {
+      setError('Please fill in all fields');
       return;
     }
 

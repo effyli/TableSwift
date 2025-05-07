@@ -34,11 +34,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
             try {
                 const projectsList = await projectService.getProjects();
                 console.log('Fetched projects:', projectsList);
+                setTimeout(() => {
+                    setIsLoadingProjects(false);
+                }, 3000);
                 setProjects(projectsList);
             } catch (error) {
                 console.error('Failed to fetch projects:', error);
             } finally {
-                setIsLoadingProjects(false);
+                // setIsLoadingProjects(false);
             }
         };
 
@@ -138,7 +141,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     
                     {
                     isLoadingProjects ? (
-                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-500 border-t-white"></div>
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-500 border-t-white mx-3 mt-2"></div>
                     ) : (
                         <div>
                             {

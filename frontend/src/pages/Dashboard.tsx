@@ -19,7 +19,7 @@ export const Dashboard: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [project, setProject] = useState<Project | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingProject, setIsLoadingProject] = useState(true);
   const [operations, setOperations] = useState<Operation[]>([]);
   const { projectId, actionId } = useParams();
   const navigate = useNavigate();
@@ -42,20 +42,24 @@ export const Dashboard: React.FC = () => {
       return;
     }
 
-    setIsLoading(true);
+    setIsLoadingProject(true);
     projectService.getProjectDetails(projectId).then((projectData) => {
       setProject(projectData);
     }).catch((error) => {
       console.error('Failed to load project:', error);
     }).finally(() => {
-      setIsLoading(false);
+      setTimeout(() => {
+        setIsLoadingProject(false);
+      }
+      , 3000); // Simulate loading time
+      // setIsLoadingProject(false);
     
       // Load operations only when needed and project is loaded
       if (!operations || operations.length === 0) {
-        setIsLoading(true);
+        setIsLoadingProject(true);
         operationService.getOperations().then((ops) => {
             setOperations(ops);
-            setIsLoading(false);
+            // setIsLoadingProject(false);
         }).catch((error) => {
             console.error('Error loading operations:', error);
         });
@@ -118,11 +122,7 @@ export const Dashboard: React.FC = () => {
 
         {/* Main content area */}
         <div className="flex flex-1 flex-col lg:flex-row min-w-0">
-          {isLoading ? (
-            <div className="flex flex-1 items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-500 border-t-transparent"></div>
-            </div>
-          ) : projectId && project ? (
+          {projectId ? (
             <>
               {isMobile ? (
                 // Mobile view - switch between views
@@ -131,13 +131,14 @@ export const Dashboard: React.FC = () => {
                   <div className={`${activeView === 'actions' ? 'flex' : 'hidden'} flex-col flex-1`}>
                     {actionId ? (
                       <SingleAction
-                        action={project.active_action}
+                        action={project?.active_action}
                         onActionUpdate={handleSetActionUpdate}
                         operations={operations}
                       />
                     ) : (
                       <ActionHistory
-                        actions={project.actions}
+                        actions={project?.actions}
+                        isLoadingProject={isLoadingProject}
                       />
                     )}
                   </div>
@@ -145,9 +146,10 @@ export const Dashboard: React.FC = () => {
                   {/* Content View - hidden on mobile when actions view is active */}
                   <div className={`${activeView === 'content' ? 'flex' : 'hidden'} flex-1 min-w-0`}>
                     <ContentView 
-                      file={project.file} 
+                      file={project?.file} 
                       projectId={projectId} 
                       onDataUpdate={handleFileDataUpdate}
+                      isLoadingProject={isLoadingProject}
                     />
                   </div>
                 </>
@@ -163,21 +165,23 @@ export const Dashboard: React.FC = () => {
                   <div className="flex flex-col overflow-auto">
                     {actionId ? (
                       <SingleAction
-                        action={project.active_action}
+                        action={project?.active_action}
                         onActionUpdate={handleSetActionUpdate}
                         operations={operations}
                       />
                     ) : (
                       <ActionHistory
-                        actions={project.actions}
+                        actions={project?.actions}
+                        isLoadingProject={isLoadingProject}
                       />
                     )}
                   </div>
                   <div className="flex flex-col overflow-auto min-w-0">
                     <ContentView 
-                      file={project.file} 
+                      file={project?.file} 
                       projectId={projectId} 
                       onDataUpdate={handleFileDataUpdate}
+                      isLoadingProject={isLoadingProject}
                     />
                   </div>
                 </Split>
