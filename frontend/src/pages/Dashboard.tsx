@@ -72,7 +72,6 @@ export const Dashboard: React.FC = () => {
   const openProject = (projectId: string) => {
     navigate(`/dashboard/${projectId}`);
   };
-
   const handleSetActionUpdate = (action: Action | null) => {
     if (project && action) {
       // Update the ActionBase list item as well
@@ -84,7 +83,7 @@ export const Dashboard: React.FC = () => {
           operation: action.operation,
           file_column: action.file_column
         } : a
-      );
+      ).sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime());
       
       setProject({
         ...project,
