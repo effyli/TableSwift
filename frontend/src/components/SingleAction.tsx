@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Action, ActionUpdate } from '../types/action';
 import { Operation } from '../types/operation';
 import { actionService } from '../services/action.service';
+import { ActionForm } from './ActionForm';
 
 interface SingleActionProps {
     action: Action | null | undefined;
@@ -17,6 +18,8 @@ export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpda
   const [selectedOperation, setSelectedOperation] = useState<number | null>(action?.operation?.id || null);
   const [fileColumn, setFileColumn] = useState(action?.file_column || '');
   const [description, setDescription] = useState(action?.description || '');
+  const [labels, setLabels] = useState(action?.labels || {}); // TODO: Add labels state
+  
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingSaving, setIsLoadingSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,6 +83,10 @@ export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpda
     }
   };
 
+  const generateLabels = () => {
+    console.log('Generating labels...');
+  }
+
   const handleBack = () => {
     if (projectId) {
       navigate(`/dashboard/${projectId}`);
@@ -117,66 +124,28 @@ export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpda
           <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-500 border-t-transparent"></div>
         </div>
       ) : (
-        <div className="space-y-4">
-          <div className='grid grid-cols-2 gap-4'>
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">
-                Operation
-              </label>
-              <select
-                value={selectedOperation || ''}
-                onChange={(e) => setSelectedOperation(e.target.value ? parseInt(e.target.value) : null)}
-                className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
-              >
-                <option value="">Select an operation</option>
-                {operations.map((op) => (
-                  <option key={op.id} value={op.id}>
-                    {op.name}
-                  </option>
-                ))}
-              </select>
+        <>
+          <ActionForm 
+            selectedOperation={selectedOperation}
+            setSelectedOperation={setSelectedOperation}
+            fileColumn={fileColumn}
+            setFileColumn={setFileColumn}
+            description={description}
+            setDescription={setDescription}
+            operations={operations}
+            fileColumns={fileColumns}
+            isLoadingSaving={isLoadingSaving}
+            error={error}
+            onSave={generateLabels}
+          />
+
+          {labels && (
+            <div className="mt-12 border-t border-gray-700 pt-12">
+              <h3 className="text-lg font-semibold text-white">Generated Labels</h3>
+              <pre className="bg-gray-800 text-gray-300 p-4 rounded">{JSON.stringify(labels, null, 2)}</pre>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">
-                Column
-              </label>
-              <select
-                className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
-                value={fileColumn || ''}
-                onChange={(e) => setFileColumn(e.target.value)}
-              >
-                <option value="">Select a column</option>
-                {fileColumns.map((col, index) => (
-                  <option key={index} value={col}>
-                    {col}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-400 mb-1">
-              Description
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500 max-h-[300px] min-h-[100px]"
-              placeholder="Enter action description"
-              rows={4}
-            />
-          </div>
-
-          <button
-            onClick={() => {console.log('Generate labels clicked');}}
-            disabled={isLoadingSaving || !selectedOperation}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-          >
-            {isLoadingSaving ? 'Generating labels...' : 'Generate labels'}
-          </button>
-        </div>
+          )}
+        </>
       )}
     </div>
   );
