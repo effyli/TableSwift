@@ -7,17 +7,19 @@ import { projectService } from '../services/project.service';
 import { ModalContext } from '../context/ModalContext';
 
 interface SidebarProps {
-  isSidebarOpen: boolean;
-  setIsSidebarOpen: (open: boolean) => void;
-  openProject: (projectId: string) => void;
-  selectedProjectId?: string;
+    isMobile: boolean;
+    isSidebarOpen: boolean;
+    setIsSidebarOpen: (open: boolean) => void;
+    openProject: (projectId: string) => void;
+    selectedProjectId?: string;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
-  isSidebarOpen,
-  setIsSidebarOpen,
-  openProject,
-  selectedProjectId
+    isMobile,
+    isSidebarOpen,
+    setIsSidebarOpen,
+    openProject,
+    selectedProjectId
 }) => {
     const { handleModal, hideModal } = useContext(ModalContext);
 
@@ -55,7 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             setProjects(prevProjects => [result, ...prevProjects]);
             
             // On mobile, close sidebar after successful upload
-            if (window.innerWidth < 1024) {
+            if (isMobile) {
                 setIsSidebarOpen(false);
             }
             navigate(`/dashboard/${result.id}`);
@@ -153,7 +155,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                     className={`group flex gap-1 justify-between items-center text-gray-300 px-3 py-3 rounded-lg cursor-pointer text-sm font-light
                                         ${selectedProjectId === project.id ? 'bg-black-lighter text-white' : 'hover:bg-black-lighter'}`}
                                     key={index} 
-                                    onClick={() => {openProject(project.id); setIsSidebarOpen(false);}}
+                                    onClick={() => {
+                                        openProject(project.id); 
+                                        if (isMobile) {
+                                            setIsSidebarOpen(false);
+                                        }
+                                    }}
                                 >
                                     <div
                                         key={index}
