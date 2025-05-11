@@ -19,7 +19,8 @@ export const ContentView: React.FC<ContentViewProps> = ({ file, projectId, onDat
   const headers = file?.data?.[0] ? Object.keys(file.data[0]) : [];
 
   const handleSearch = async () => {
-    if (!searchTerm.trim() || searchTerm === prevSearchTerm) return;
+    if (!searchTerm.trim()) return clearSearch();
+    if (searchTerm === prevSearchTerm) return;
 
     setIsSearching(true);
     try {
@@ -31,12 +32,12 @@ export const ContentView: React.FC<ContentViewProps> = ({ file, projectId, onDat
         total_rows: result.total_rows
       });
       setIsSearchActive(true);
-      setPrevSearchTerm(searchTerm);
     } catch (error) {
       console.error('Failed to search:', error);
       // TODO: Show error message to user
     } finally {
       setIsSearching(false);
+      setPrevSearchTerm(searchTerm);
     }
   };
 
@@ -76,6 +77,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ file, projectId, onDat
   const clearSearch = async () => {
     setSearchTerm('');
     setIsSearchActive(false);
+    setPrevSearchTerm('');
     
     // Reset to initial data
     try {
@@ -123,11 +125,11 @@ export const ContentView: React.FC<ContentViewProps> = ({ file, projectId, onDat
               />
               <button
                 onClick={handleSearch}
-                disabled={isSearching || !searchTerm.trim() || searchTerm === prevSearchTerm}
+                disabled={isSearching || searchTerm === prevSearchTerm}
                 className={`
                   min-w-[100px] px-4 py-2 bg-indigo-600 text-white rounded-lg
                   transition-colors flex items-center justify-center gap-2
-                  ${isSearching || !searchTerm.trim() || searchTerm === prevSearchTerm
+                  ${isSearching || searchTerm === prevSearchTerm
                     ? 'opacity-50 cursor-not-allowed'
                     : 'hover:bg-indigo-700'}
                 `}
