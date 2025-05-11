@@ -74,6 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         try {
             await projectService.deleteProject(projectId);
             setProjects(prevProjects => prevProjects.filter(p => p.id !== projectId));
+            navigate('/dashboard');
             hideModal();
         } catch (error) {
             console.error('Failed to delete project:', error);

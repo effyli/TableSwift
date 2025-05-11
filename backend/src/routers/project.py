@@ -111,12 +111,12 @@ async def delete_project_endpoint(project_id: UUID, token_data: TokenData = Depe
         project = await get_user_project(project_id, token_data.user_id)
         
         try:
+            # Clear cache for the project
+            await FastAPICache.clear(namespace="{project_id}")
+
             # First try to delete the file
             print(f"Attempting to delete file at {project.file.file_path}")
             await delete_file(project.file.file_path)
-            
-            # Clear cache for the project
-            await FastAPICache.clear(namespace="{project_id}")
             
             # If file deletion successful, delete from database
             delete_project(project.id, token_data.user_id)

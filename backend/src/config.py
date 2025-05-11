@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     CSRF_SECRET_KEY: str
     
     # Redis settings
-    REDIS_HOST: str = "localhost"
+    REDIS_HOST: str = "redis"  # Use the service name from docker-compose.yml
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
     CACHE_TTL: int = 300  # 5 minutes in seconds
