@@ -18,13 +18,6 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, onAct
   const navigate = useNavigate();
 
   const [action, setAction] = useState<Action | null>(projectAction || null);
-
-  // const [selectedOperation, setSelectedOperation] = useState<number | null>(action?.operation?.id || null);
-  // const [fileColumn, setFileColumn] = useState<string | undefined>(action?.file_column || undefined);
-  // const [description, setDescription] = useState<string | undefined>(action?.description || undefined);
-  // const [labels, setLabels] = useState<JSON[] | undefined>(action?.labels || undefined); 
-  // const [code, setCode] = useState<string[] | undefined>(action?.code || undefined);
-
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isLoadingSaving, setIsLoadingSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,25 +42,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, onAct
     }
   }, []);
   
-  // // Update all form fields when action changes 
-  // useEffect(() => {
-  //   if (projectAction) {
-  //     setAction(projectAction);
-  //     // setSelectedOperation(action.operation?.id || null);
-  //     // setFileColumn(action.file_column);
-  //     // setDescription(action.description);
-  //     // setLabels(action.labels);
-  //     // setCode(action.code);
-  //   } else {
-  //     // Reset form if action is null
-  //     setAction(null);
-  //     // setSelectedOperation(null);
-  //     // setFileColumn(undefined);
-  //     // setDescription(undefined);
-  //     // setLabels(undefined);
-  //     // setCode(undefined);
-  //   }
-  // }, [projectAction]);
+
 
   const handleBack = () => {
     if (projectId) {
@@ -82,21 +57,6 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, onAct
       [field]: value
     } as Action);
   }
-
-  // const makeAction = () => {
-  //   if (!action || !actionId) return;
-
-  //   return {
-  //       id: parseInt(actionId),
-  //       project_id: projectId!,
-  //       datetime: action.datetime,
-  //       operation: { id: selectedOperation, name: '' },
-  //       file_column: fileColumn,
-  //       description: description,
-  //       labels: labels,
-  //       code: code,
-  //     };
-  // };
 
   // Handle save action
   const handleSave = async () => {
