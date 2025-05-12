@@ -49,6 +49,12 @@ def init_db():
         """)
 
         conn.execute("""
+            CREATE SEQUENCE IF NOT EXISTS code_id_seq
+            START WITH 1
+            INCREMENT BY 1;
+        """)
+
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS files (
                 id INTEGER PRIMARY KEY 
                     DEFAULT nextval('file_id_seq'),
