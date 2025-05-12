@@ -1,5 +1,6 @@
 import axiosInstance from './axios.config';
-import { Action, ActionBase, ActionCreate, ActionUpdate } from '../types/action';
+import { Action, ActionBase, ActionCreate
+ } from '../types/action';
 
 export const actionService = {
     async createAction(action: ActionCreate): Promise<ActionBase> {
@@ -8,6 +9,14 @@ export const actionService = {
             return response.data;
         } catch (error) {
             throw new Error('Failed to create action');
+        }
+    },
+
+    async deleteAction(actionId: number): Promise<void> {
+        try {
+            await axiosInstance.delete(`/action/${actionId}`);
+        } catch (error) {
+            throw new Error('Failed to delete action');
         }
     },
 
@@ -20,20 +29,30 @@ export const actionService = {
         }
     },
 
-    async updateAction(actionId: number, action: ActionUpdate): Promise<Action> {
+    async updateAction(action: Action): Promise<Action> {
         try {
-            const response = await axiosInstance.put<Action>(`/action/${actionId}`, action);
+            const response = await axiosInstance.put<Action>(`/action/${action.id}`, action);
             return response.data;
         } catch (error) {
             throw new Error('Failed to update action');
         }
     },
 
-    async deleteAction(actionId: number): Promise<void> {
+    async generateLabels(action: Action): Promise<Action> {
         try {
-            await axiosInstance.delete(`/action/${actionId}`);
+            const response = await axiosInstance.post<Action>(`/action/generate_labels`, action);
+            return response.data;
         } catch (error) {
-            throw new Error('Failed to delete action');
+            throw new Error('Failed to generate labels');
+        }
+    },
+
+    async generateCode(action: Action): Promise<Action> {
+        try {
+            const response = await axiosInstance.post<Action>(`/action/generate_code`, action);
+            return response.data;
+        } catch (error) {
+            throw new Error('Failed to generate code');
         }
     },
 };

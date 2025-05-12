@@ -1,33 +1,42 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Operation } from '../types/operation';
+import { Action } from '../types/action';
 
 interface ActionFormProps {
     selectedOperation: number | null;
-    setSelectedOperation: (operation: number | null) => void;
-    fileColumn: string;
-    setFileColumn: (column: string) => void;
-    description: string;
-    setDescription: (description: string) => void;
+    fileColumn: string | undefined;
+    description: string | undefined;
     operations: Operation[];
     fileColumns: string[];
-    isLoadingSaving: boolean;
+    onFieldChange: (field: keyof Action, value: any) => void;
+    generateLabels: () => void;
     error: string | null;
-    onSave: () => void;
 }
 
 export const ActionForm: React.FC<ActionFormProps> = ({
     selectedOperation,
-    setSelectedOperation,
     fileColumn,
-    setFileColumn,
     description,
-    setDescription,
     operations,
     fileColumns,
-    isLoadingSaving,
+    onFieldChange,
+    generateLabels,
     error,
-    onSave,
 }) => {
+    const [isLoadingGenerating, setIsLoadingGenerating] = useState(false);
+
+    const handleGenerateLabels = () => {
+        setIsLoadingGenerating(true);
+        try {
+            generateLabels();
+        }
+        catch (err) {
+            console.error('Error generating labels:', err);
+        } finally {
+            setIsLoadingGenerating(false);
+        }
+    };
+
     return (
         <div className="space-y-4">
             {error && (
@@ -43,7 +52,10 @@ export const ActionForm: React.FC<ActionFormProps> = ({
                     </label>
                     <select
                         value={selectedOperation || ''}
-                        onChange={(e) => setSelectedOperation(e.target.value ? parseInt(e.target.value) : null)}
+                        onChange={(e) => {
+                            const selectedOp = operations.find(op => op.id === parseInt(e.target.value));
+                            onFieldChange('operation', e.target.value ? { id: parseInt(e.target.value), name: selectedOp?.name || '' } : null);
+                        }}
                         className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
                     >
                         <option value="">Select an operation</option>
@@ -62,7 +74,7 @@ export const ActionForm: React.FC<ActionFormProps> = ({
                     <select
                         className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
                         value={fileColumn || ''}
-                        onChange={(e) => setFileColumn(e.target.value)}
+                        onChange={(e) => onFieldChange('file_column', e.target.value)}
                     >
                         <option value="">Select a column</option>
                         {fileColumns.map((col, index) => (
@@ -80,7 +92,7 @@ export const ActionForm: React.FC<ActionFormProps> = ({
                 </label>
                 <textarea
                     value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    onChange={(e) => onFieldChange('description', e.target.value)}
                     className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500 max-h-[300px] min-h-[100px]"
                     placeholder="Enter action description"
                     rows={4}
@@ -88,11 +100,11 @@ export const ActionForm: React.FC<ActionFormProps> = ({
             </div>
 
             <button
-                onClick={onSave}
-                disabled={isLoadingSaving || !selectedOperation}
+                onClick={() => handleGenerateLabels()}
+                disabled={isLoadingGenerating || !selectedOperation}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
             >
-                {isLoadingSaving ? 'Saving...' : 'Generate Labels'}
+                {isLoadingGenerating ? 'Generating...' : 'Generate Labels'}
             </button>
         </div>
     );

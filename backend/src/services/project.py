@@ -58,7 +58,7 @@ async def get_user_project(project_id: UUID, user_id: UUID) -> Project:
     with get_db() as conn:
         try:
             result = conn.execute("""
-                SELECT p.id, p.name, p.user_id, p.created_at, f.file_path
+                SELECT p.id, p.name, p.created_at, f.file_path
                 FROM projects p
                 JOIN files f ON p.file_id = f.id
                 WHERE p.id = ? AND p.user_id = ?
@@ -73,9 +73,8 @@ async def get_user_project(project_id: UUID, user_id: UUID) -> Project:
             return Project(
                 id=result[0],
                 name=result[1],
-                user_id=result[2],
-                created_at=result[3],
-                file=File(file_path=result[4])
+                created_at=result[2],
+                file=File(file_path=result[3])
             )
         except Exception as e:
             raise HTTPException(

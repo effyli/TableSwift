@@ -22,7 +22,6 @@ class Project(ProjectBase):
     actions: List[ActionBase] = []
     active_action: Optional[Action] = None
     file: File
-    user_id: UUID
     created_at: datetime
 
     class Config:

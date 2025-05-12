@@ -47,6 +47,7 @@ export const Dashboard: React.FC = () => {
 
     setIsLoadingProject(true);
     projectService.getProjectDetails(projectId, actionId).then((projectData) => {
+      console.log('Project data:', projectData);
       setProject(projectData);
       setFileColumns(projectData?.file?.data?.[0] ? Object.keys(projectData.file.data[0]) : []);
     }).catch((error) => {
@@ -72,7 +73,9 @@ export const Dashboard: React.FC = () => {
   const openProject = (projectId: string) => {
     navigate(`/dashboard/${projectId}`);
   };
+
   const handleSetActionUpdate = (action: Action | null) => {
+    // Update the active action in the project when a single action is updated
     if (project && action) {
       // Update the ActionBase list item as well
       const updatedActions = project.actions.map(a => 
@@ -94,6 +97,7 @@ export const Dashboard: React.FC = () => {
   };
 
   const handleActionListUpdate = (actions: ActionBase[] | null) => {
+    // Update the action list in the project when an action is added or deleted
     if (project) {
       setProject({
         ...project,
@@ -141,7 +145,7 @@ export const Dashboard: React.FC = () => {
                   <div className={`${activeView === 'actions' ? 'flex' : 'hidden'} flex-col flex-1`}>
                     {actionId ? (
                       <SingleAction
-                        action={project?.active_action}
+                        projectAction={project?.active_action}
                         onActionUpdate={handleSetActionUpdate}
                         operations={operations}
                         fileColumns={fileColumns}
@@ -177,7 +181,7 @@ export const Dashboard: React.FC = () => {
                   <div className="flex flex-col overflow-auto">
                     {actionId ? (
                       <SingleAction
-                        action={project?.active_action}
+                        projectAction={project?.active_action}
                         onActionUpdate={handleSetActionUpdate}
                         operations={operations}
                         fileColumns={fileColumns}

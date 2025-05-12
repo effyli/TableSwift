@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, status
-from ..models.action import Action, ActionCreate, ActionUpdate, ActionBase
+from ..models.action import Action, ActionCreate, ActionBase
 from ..models.user import TokenData
 from ..services.action import create_action, get_action, update_action, delete_action
 from ..dependencies import validate_token
@@ -39,9 +39,9 @@ async def get_single_action(action_id: int, _: TokenData = Depends(validate_toke
         )
 
 @router.put("/{action_id}", response_model=Action)
-async def update_single_action(action_id: int, action_update: ActionUpdate, _: TokenData = Depends(validate_token)):
+async def update_single_action(action_id: int, action: Action, _: TokenData = Depends(validate_token)):
     try:
-        return update_action(action_id, action_update)
+        return update_action(action_id, action)
     except ValueError as e:
         # For known validation errors
         raise HTTPException(

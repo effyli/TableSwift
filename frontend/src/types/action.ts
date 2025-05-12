@@ -11,16 +11,10 @@ export interface ActionBase {
 export interface Action extends ActionBase {
     description?: string;
     labels?: JSON[];
-    code?: string;
+    code?: string[];
 }
 
 export interface ActionCreate {
     project_id: string;
 }
 
-export interface ActionUpdate {
-    id: number;
-    operation_id: number;
-    file_column: string;
-    description: string;
-}

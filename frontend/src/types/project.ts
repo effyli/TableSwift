@@ -6,12 +6,9 @@ export interface ProjectSidebar {
     name: string;
 }
 
-export interface Project {
-    id: string;
-    name: string;
+export interface Project extends ProjectSidebar {
     file: File;
     actions: ActionBase[];
     active_action: Action | null;
-    user_id: string;
     created_at: string;
 }

@@ -15,16 +15,11 @@ class ActionBase(BaseModel):
 class Action(ActionBase):
     description: Optional[str] = None
     labels: Optional[List[Dict[str, Any]]] = None
-    code: Optional[str] = None
+    code: Optional[List[str]] = None
 
     class Config:
         from_attributes = True
 
 class ActionCreate(BaseModel):
     project_id: UUID
-
-class ActionUpdate(BaseModel):
-    id: int
-    operation_id: int
-    file_column: str
-    description: str
+    

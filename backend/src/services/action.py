@@ -1,5 +1,5 @@
 from datetime import datetime
-from ..models.action import ActionBase, Action, ActionCreate, ActionUpdate
+from ..models.action import ActionBase, Action, ActionCreate
 from ..models.operation import Operation
 from ..database import get_db
 from uuid import UUID
@@ -102,12 +102,12 @@ def check_column_exists(action_id: int, column_name: str) -> bool:
             raise ValueError(f"Column '{column_name}' not found in file. Available columns: {', '.join(columns)}")
 
 
-def update_action(action_id: int, action_update: ActionUpdate) -> Action:
+def update_action(action_id: int, action: Action) -> Action:
     """Update an action with new data."""
     with get_db() as conn:
         # Check if the action exists
         try:
-            check_column_exists(action_id, action_update.file_column)
+            check_column_exists(action_id, action.file_column)
         except ValueError as e:
             # If the column does not exist, raise an error
             raise ValueError(f"Validation error: {str(e)}")
@@ -121,9 +121,9 @@ def update_action(action_id: int, action_update: ActionUpdate) -> Action:
                 datetime = CURRENT_TIMESTAMP
             WHERE id = ?
         """, [
-            action_update.operation_id,
-            action_update.file_column,
-            action_update.description,
+            action.operation.id,
+            action.file_column,
+            action.description,
             action_id
         ])
         

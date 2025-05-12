@@ -1,27 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Action, ActionUpdate } from '../types/action';
+import { Action } from '../types/action';
 import { Operation } from '../types/operation';
 import { actionService } from '../services/action.service';
 import { ActionForm } from './ActionForm';
+import { LabelForm } from './LabelForm';
 
 interface SingleActionProps {
-    action: Action | null | undefined;
+    projectAction: Action | null | undefined;
     onActionUpdate: (action: Action | null) => void;
     operations: Operation[];
     fileColumns: string[];
 }
 
-export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpdate, operations, fileColumns }) => {
+export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, onActionUpdate, operations, fileColumns }) => {
   const { projectId, actionId } = useParams();
   const navigate = useNavigate();
-  const [selectedOperation, setSelectedOperation] = useState<number | null>(action?.operation?.id || null);
-  const [fileColumn, setFileColumn] = useState(action?.file_column || '');
-  const [description, setDescription] = useState(action?.description || '');
-  const [labels, setLabels] = useState(action?.labels || {}); // TODO: Add labels state
-  
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingSaving, setIsLoadingSaving] = useState(false);
+
+  const [action, setAction] = useState<Action | null>(projectAction || null);
+
+  // const [selectedOperation, setSelectedOperation] = useState<number | null>(action?.operation?.id || null);
+  // const [fileColumn, setFileColumn] = useState<string | undefined>(action?.file_column || undefined);
+  // const [description, setDescription] = useState<string | undefined>(action?.description || undefined);
+  // const [labels, setLabels] = useState<JSON[] | undefined>(action?.labels || undefined); 
+  // const [code, setCode] = useState<string[] | undefined>(action?.code || undefined);
+
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoadingSaving, setIsLoadingSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -31,7 +36,8 @@ export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpda
       setIsLoading(true);
       
       actionService.getAction(parseInt(actionId!)).then((actionData) => {
-        onActionUpdate(actionData);
+        // onActionUpdate(actionData);
+        setAction(actionData);
       }).catch((error) => {
         setError('Failed to load action');
         console.error('Error loading action:', error);
@@ -43,38 +49,67 @@ export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpda
     }
   }, []);
   
-  // Update all form fields when action changes
-  useEffect(() => {
-    if (action) {
-      setSelectedOperation(action.operation?.id || null);
-      setFileColumn(action.file_column || '');
-      setDescription(action.description || '');
-    } else {
-      // Reset form if action is null
-      setSelectedOperation(null);
-      setFileColumn('');
-      setDescription('');
-    }
-  }, [action]);
+  // // Update all form fields when action changes 
+  // useEffect(() => {
+  //   if (projectAction) {
+  //     setAction(projectAction);
+  //     // setSelectedOperation(action.operation?.id || null);
+  //     // setFileColumn(action.file_column);
+  //     // setDescription(action.description);
+  //     // setLabels(action.labels);
+  //     // setCode(action.code);
+  //   } else {
+  //     // Reset form if action is null
+  //     setAction(null);
+  //     // setSelectedOperation(null);
+  //     // setFileColumn(undefined);
+  //     // setDescription(undefined);
+  //     // setLabels(undefined);
+  //     // setCode(undefined);
+  //   }
+  // }, [projectAction]);
 
+  const handleBack = () => {
+    if (projectId) {
+      navigate(`/dashboard/${projectId}`);
+    }
+  };
+
+  const handleActionChange = (field: keyof Action, value: any) => {
+    if (!action || !(field in action)) return; // TODO reload page
+    setAction({
+      ...action,
+      [field]: value
+    } as Action);
+  }
+
+  // const makeAction = () => {
+  //   if (!action || !actionId) return;
+
+  //   return {
+  //       id: parseInt(actionId),
+  //       project_id: projectId!,
+  //       datetime: action.datetime,
+  //       operation: { id: selectedOperation, name: '' },
+  //       file_column: fileColumn,
+  //       description: description,
+  //       labels: labels,
+  //       code: code,
+  //     };
+  // };
+
+  // Handle save action
   const handleSave = async () => {
-    if (!actionId || !selectedOperation || !fileColumn || !description) {
-      setError('Please fill in all fields');
-      return;
-    }
-
     setIsLoadingSaving(true);
-    try {
-      const actionUpdate: ActionUpdate = {
-        id: parseInt(actionId),
-        operation_id: selectedOperation,
-        file_column: fileColumn,
-        description: description
-      };
 
-      const updatedAction = await actionService.updateAction(parseInt(actionId), actionUpdate);
+    try {
+      if (!action) {
+        setError('Please fill in all fields');
+        return;
+      }
+
+      const updatedAction = await actionService.updateAction(action);
       onActionUpdate(updatedAction);
-      // TODO show the generated labels
     } catch (error) {
       setError('Failed to save action');
       console.error('Error saving action:', error);
@@ -83,13 +118,45 @@ export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpda
     }
   };
 
-  const generateLabels = () => {
+  // Handle generate labels
+  const generateLabels = async () => {
     console.log('Generating labels...');
+    setIsLoadingSaving(true);
+
+    try {
+      if (!action) {
+        setError('Please fill in all fields');
+        return;
+      }
+
+      const updatedAction = await actionService.generateLabels(action);
+      onActionUpdate(updatedAction);
+    } catch (error) {
+      setError('Failed to save action');
+      console.error('Error saving action:', error);
+    } finally {
+      setIsLoadingSaving(false);
+    }
   }
 
-  const handleBack = () => {
-    if (projectId) {
-      navigate(`/dashboard/${projectId}`);
+  // Handle generate code
+  const generateCode = async () => {
+    console.log('Generating code...');  
+    setIsLoadingSaving(true);
+
+    try {
+      if (!action) {
+        setError('Please fill in all fields');
+        return;
+      }
+
+      const updatedAction = await actionService.generateCode(action);
+      onActionUpdate(updatedAction);
+    } catch (error) {
+      setError('Failed to save action');
+      console.error('Error saving action:', error);
+    } finally {
+      setIsLoadingSaving(false);
     }
   };
 
@@ -105,7 +172,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpda
         {!isLoading && (
           <button
             onClick={handleSave}
-            disabled={isLoadingSaving || !selectedOperation}
+            disabled={isLoadingSaving || !action?.operation?.id}
             className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
           >
             {isLoadingSaving ? 'Saving...' : 'Save Action'}
@@ -125,25 +192,23 @@ export const SingleAction: React.FC<SingleActionProps> = ({ action, onActionUpda
         </div>
       ) : (
         <>
-          <ActionForm 
-            selectedOperation={selectedOperation}
-            setSelectedOperation={setSelectedOperation}
-            fileColumn={fileColumn}
-            setFileColumn={setFileColumn}
-            description={description}
-            setDescription={setDescription}
-            operations={operations}
-            fileColumns={fileColumns}
-            isLoadingSaving={isLoadingSaving}
-            error={error}
-            onSave={generateLabels}
-          />
+          {action && (
+            <>
+              <ActionForm 
+                selectedOperation={action.operation?.id || null}
+                fileColumn={action.file_column}
+                description={action.description}
+                operations={operations}
+                fileColumns={fileColumns}
+                onFieldChange={handleActionChange}
+                generateLabels={generateLabels}
+                error={error}
+              />
 
-          {labels && (
-            <div className="mt-12 border-t border-gray-700 pt-12">
-              <h3 className="text-lg font-semibold text-white">Generated Labels</h3>
-              <pre className="bg-gray-800 text-gray-300 p-4 rounded">{JSON.stringify(labels, null, 2)}</pre>
-            </div>
+              {action.labels && (
+          <LabelForm labels={action.labels} generateCode={generateCode} />
+              )}
+            </>
           )}
         </>
       )}
