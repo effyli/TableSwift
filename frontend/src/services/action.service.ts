@@ -1,6 +1,8 @@
 import axiosInstance from './axios.config';
 import { Action, ActionBase, ActionCreate
  } from '../types/action';
+import { Labels } from '../types/labels';
+import { Code } from '../types/code';
 
 export const actionService = {
     async createAction(action: ActionCreate): Promise<ActionBase> {
@@ -38,18 +40,18 @@ export const actionService = {
         }
     },
 
-    async generateLabels(action: Action): Promise<Action> {
+    async generateLabels(action: Action): Promise<Labels> {
         try {
-            const response = await axiosInstance.post<Action>(`/action/generate_labels`, action);
+            const response = await axiosInstance.post<Labels>(`/action/generate_labels`, action);
             return response.data;
         } catch (error) {
             throw new Error('Failed to generate labels');
         }
     },
 
-    async generateCode(action: Action): Promise<Action> {
+    async generateCode(action: Action): Promise<Code> {
         try {
-            const response = await axiosInstance.post<Action>(`/action/generate_code`, action);
+            const response = await axiosInstance.post<Code>(`/action/generate_code`, action);
             return response.data;
         } catch (error) {
             throw new Error('Failed to generate code');

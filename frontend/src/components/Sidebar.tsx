@@ -35,7 +35,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             setIsLoadingProjects(true);
             try {
                 const projectsList = await projectService.getProjects();
-                console.log('Fetched projects:', projectsList);
                 setProjects(projectsList);
             } catch (error) {
                 console.error('Failed to fetch projects:', error);
@@ -70,7 +69,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     };
 
     const handleDeleteProject = async (projectId: string) => {
-        console.log('Deleting project with ID:', projectId);
         try {
             await projectService.deleteProject(projectId);
             setProjects(prevProjects => prevProjects.filter(p => p.id !== projectId));

@@ -5,15 +5,19 @@ import { Operation } from '../types/operation';
 import { actionService } from '../services/action.service';
 import { ActionForm } from './ActionForm';
 import { LabelForm } from './LabelForm';
+import { formatActionJson } from '../util/formatAction';
 
 interface SingleActionProps {
     projectAction: Action | null | undefined;
+    isLoadingProject: boolean;
     onActionUpdate: (action: Action | null) => void;
+    activeLabels: number;
+    setActiveLabels: (count: number) => void;
     operations: Operation[];
     fileColumns: string[];
 }
 
-export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, onActionUpdate, operations, fileColumns }) => {
+export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoadingProject, onActionUpdate, operations, fileColumns, activeLabels, setActiveLabels }) => {
   const { projectId, actionId } = useParams();
   const navigate = useNavigate();
 
@@ -23,14 +27,19 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, onAct
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load the action only when needed
-    if ((!action && actionId) || (action && action.id !== parseInt(actionId ?? ''))) {
-      onActionUpdate(null);
+    setAction(projectAction || null);
+    setIsLoading(false);
+  }, [projectAction]);
+
+  useEffect(() => {
+    // Load the action only when not loaded by the full project in dashboard
+    if ((!action && actionId && !isLoadingProject) || (action && action.id !== parseInt(actionId ?? '') && !isLoadingProject)) {
       setIsLoading(true);
+      onActionUpdate(null);
       
       actionService.getAction(parseInt(actionId!)).then((actionData) => {
-        // onActionUpdate(actionData);
-        setAction(actionData);
+        onActionUpdate(actionData);
+        
       }).catch((error) => {
         setError('Failed to load action');
         console.error('Error loading action:', error);
@@ -42,8 +51,6 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, onAct
     }
   }, []);
   
-
-
   const handleBack = () => {
     if (projectId) {
       navigate(`/dashboard/${projectId}`);
@@ -52,7 +59,8 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, onAct
 
   const handleActionChange = (field: keyof Action, value: any) => {
     if (!action || !(field in action)) return; // TODO reload page
-    setAction({
+
+    onActionUpdate({
       ...action,
       [field]: value
     } as Action);
@@ -61,14 +69,15 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, onAct
   // Handle save action
   const handleSave = async () => {
     setIsLoadingSaving(true);
+    if (!action) {
+      setError('Please fill in all fields');
+      return;
+    }
 
     try {
-      if (!action) {
-        setError('Please fill in all fields');
-        return;
-      }
-
-      const updatedAction = await actionService.updateAction(action);
+      // Make a copy of action to avoid mutating the original object
+      const formattedAction = formatActionJson({ ...action });
+      const updatedAction = await actionService.updateAction(formattedAction);
       onActionUpdate(updatedAction);
     } catch (error) {
       setError('Failed to save action');
@@ -80,16 +89,21 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, onAct
 
   // Handle generate labels
   const generateLabels = async () => {
-    console.log('Generating labels...');
     setIsLoadingSaving(true);
+    if (!action) {
+      setError('Please fill in all fields');
+      return;
+    }
 
-    try {
-      if (!action) {
-        setError('Please fill in all fields');
-        return;
-      }
+    try { 
+      // Make a copy of action to avoid mutating the original object
+      const formattedAction = formatActionJson({ ...action });
+      const labels = await actionService.generateLabels(formatActionJson(formattedAction));
 
-      const updatedAction = await actionService.generateLabels(action);
+      const updatedAction = {
+        ...formattedAction,
+        labels: [...(action.labels || []), ...[labels]]
+      };
       onActionUpdate(updatedAction);
     } catch (error) {
       setError('Failed to save action');
@@ -101,17 +115,16 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, onAct
 
   // Handle generate code
   const generateCode = async () => {
-    console.log('Generating code...');  
     setIsLoadingSaving(true);
+    if (!action) {
+      setError('Please fill in all fields');
+      return;
+    }
 
     try {
-      if (!action) {
-        setError('Please fill in all fields');
-        return;
-      }
-
-      const updatedAction = await actionService.generateCode(action);
-      onActionUpdate(updatedAction);
+      // Make a copy of action to avoid mutating the original object
+      const formattedAction = formatActionJson({ ...action });
+      const code = await actionService.generateCode(formattedAction);
     } catch (error) {
       setError('Failed to save action');
       console.error('Error saving action:', error);
@@ -166,7 +179,12 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, onAct
               />
 
               {action.labels && (
-          <LabelForm labels={action.labels} generateCode={generateCode} />
+                <LabelForm 
+                  labels={action.labels} 
+                  generateCode={generateCode} 
+                  activeLabels={activeLabels}
+                  setActiveLabels={setActiveLabels}
+                />
               )}
             </>
           )}

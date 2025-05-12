@@ -21,6 +21,7 @@ export const Dashboard: React.FC = () => {
   const [isLoadingProject, setIsLoadingProject] = useState(true);
 
   const [project, setProject] = useState<Project | null>(null);
+  const [activeLabels, setActiveLabels] = useState<number>(0);
   const [operations, setOperations] = useState<Operation[]>([]);
   const [fileColumns, setFileColumns] = useState<string[]>([]);
   
@@ -47,8 +48,8 @@ export const Dashboard: React.FC = () => {
 
     setIsLoadingProject(true);
     projectService.getProjectDetails(projectId, actionId).then((projectData) => {
-      console.log('Project data:', projectData);
       setProject(projectData);
+      setActiveLabels(projectData.active_action?.labels ? projectData.active_action.labels.length - 1 : 0);
       setFileColumns(projectData?.file?.data?.[0] ? Object.keys(projectData.file.data[0]) : []);
     }).catch((error) => {
       console.error('Failed to load project:', error);
@@ -87,6 +88,8 @@ export const Dashboard: React.FC = () => {
           file_column: action.file_column
         } : a
       ).sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime());
+
+      setActiveLabels(action.labels ? action.labels.length - 1 : 0);
       
       setProject({
         ...project,
@@ -146,7 +149,10 @@ export const Dashboard: React.FC = () => {
                     {actionId ? (
                       <SingleAction
                         projectAction={project?.active_action}
+                        isLoadingProject={isLoadingProject}
                         onActionUpdate={handleSetActionUpdate}
+                        activeLabels={activeLabels}
+                        setActiveLabels={setActiveLabels}
                         operations={operations}
                         fileColumns={fileColumns}
                       />
@@ -182,7 +188,10 @@ export const Dashboard: React.FC = () => {
                     {actionId ? (
                       <SingleAction
                         projectAction={project?.active_action}
+                        isLoadingProject={isLoadingProject}
                         onActionUpdate={handleSetActionUpdate}
+                        activeLabels={activeLabels}
+                        setActiveLabels={setActiveLabels}
                         operations={operations}
                         fileColumns={fileColumns}
                       />

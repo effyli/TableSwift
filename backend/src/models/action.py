@@ -1,9 +1,9 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from uuid import UUID
-from typing import List, Dict, Any
 from .operation import Operation
+from .labels import Labels
 
 class ActionBase(BaseModel):
     id: int
@@ -14,8 +14,7 @@ class ActionBase(BaseModel):
 
 class Action(ActionBase):
     description: Optional[str] = None
-    labels: Optional[List[Dict[str, Any]]] = None
-    code: Optional[List[str]] = None
+    labels: List[Labels]
 
     class Config:
         from_attributes = True

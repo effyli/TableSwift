@@ -20,7 +20,6 @@ export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const [modal, setModal] = useState<ModalInterface | null>(null);
 
     const handleModal = (modalConfig: ModalInterface) => {
-        console.log('Modal:', modalConfig);
         setModal(modalConfig);
     };
 

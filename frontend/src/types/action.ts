@@ -1,4 +1,5 @@
 import { Operation } from './operation';
+import { Labels } from './labels';
 
 export interface ActionBase {
     id: number;
@@ -10,8 +11,7 @@ export interface ActionBase {
 
 export interface Action extends ActionBase {
     description?: string;
-    labels?: JSON[];
-    code?: string[];
+    labels?: Labels[];
 }
 
 export interface ActionCreate {
