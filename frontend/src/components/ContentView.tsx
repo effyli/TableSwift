@@ -94,7 +94,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ file, projectId, onDat
   };
   
   return (
-    <div className="bg-black min-h-0 h-full p-4 flex-1 flex flex-col w-full">
+    <div className="bg-black min-h-0 h-full px-8 py-4 flex-1 flex flex-col w-full">
       {isLoadingProject ? (
         // TODO custom loader
         <div className="flex flex-1 items-center justify-center">

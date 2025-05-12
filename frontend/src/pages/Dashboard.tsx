@@ -181,8 +181,7 @@ export const Dashboard: React.FC = () => {
                   className="flex flex-1 w-full"
                   sizes={[50, 50]}
                   minSize={300}
-                  gutterSize={4}
-                  snapOffset={0}
+                  gutterSize={12}
                 >
                   <div className="flex flex-col overflow-auto">
                     {actionId ? (

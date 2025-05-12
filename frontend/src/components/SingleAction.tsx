@@ -134,8 +134,8 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
   };
 
   return (
-    <div className="bg-black-light border-r border-black-lighter p-4 h-full flex flex-col overflow-auto">
-      <div className="sticky top-0 flex items-center mb-6 justify-between">
+    <div className="bg-black-light border-r border-black-lighter p-8 pb-24 pt-0 h-full flex flex-col overflow-auto custom-scrollbar">
+      <div className="bg-black-light sticky top-0 flex items-center justify-between py-4">
         <button
           onClick={handleBack}
           className="text-indigo-500 hover:text-indigo-400 mr-4"
@@ -171,6 +171,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
                 selectedOperation={action.operation?.id || null}
                 fileColumn={action.file_column}
                 description={action.description}
+                isSaved={action.labels ? action.labels.length > 0 : false}
                 operations={operations}
                 fileColumns={fileColumns}
                 onFieldChange={handleActionChange}

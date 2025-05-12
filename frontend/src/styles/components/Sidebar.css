@@ -2,6 +2,8 @@
     scrollbar-color: var(--color-grey) transparent;
     scrollbar-width: thin;
     overflow: auto;
+    scrollbar-x-position: 10px;
+    
 }
 
 #sidebar-projects {
