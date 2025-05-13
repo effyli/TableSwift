@@ -50,6 +50,15 @@ export const actionService = {
         }
     },
 
+    async saveLabels(labels: Labels): Promise<any> {
+        try {
+            const response = await axiosInstance.post<any>(`/action/save_labels`, labels);
+            return response.data;
+        } catch (error) {
+            throw new Error('Failed to save labels');
+        }
+    },
+
     async generateCode(action: Action): Promise<Code> {
         try {
             const response = await axiosInstance.post<Code>(`/action/generate_code`, action);

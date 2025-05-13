@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Action } from '../types/action';
 import { Operation } from '../types/operation';
 import { actionService } from '../services/action.service';
 import { ActionForm } from './ActionForm';
 import { LabelForm } from './LabelForm';
-import { formatLabelsJson } from '../util/formatAction';
+import { formatActionJson, parseLabels } from '../util/formatAction';
 
 interface SingleActionProps {
     projectAction: Action | null | undefined;
@@ -20,8 +20,12 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isLoadingSaving, setIsLoadingSaving] = useState<boolean>(false);
+  // const [isLoadingSaving, setIsLoadingSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    console.log('Project action updated:', projectAction);
+  }, [projectAction]);
 
   useEffect(() => {
     // Load the action only when not loaded by the full project in dashboard
@@ -58,26 +62,26 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
     } as Action);
   }
 
-  // Handle save action
-  const handleSave = async () => {
-    setIsLoadingSaving(true);
-    if (!projectAction) {
-      setError('Please fill in all fields');
-      return;
-    }
+  // // Handle save action
+  // const handleSave = async () => {
+  //   setIsLoadingSaving(true);
+  //   if (!projectAction) {
+  //     setError('Please fill in all fields');
+  //     return;
+  //   }
 
-    try {
-      // Make a copy of action to avoid mutating the original object
-      const formattedAction = formatLabelsJson({ ...projectAction });
-      const updatedAction = await actionService.updateAction(formattedAction);
-      onActionUpdate(updatedAction);
-    } catch (error) {
-      setError('Failed to save action');
-      console.error('Error saving action:', error);
-    } finally {
-      setIsLoadingSaving(false);
-    }
-  };
+  //   try {
+  //     // Make a copy of action to avoid mutating the original object
+  //     const formattedAction = formatActionJson({ ...projectAction });
+  //     const updatedAction = await actionService.updateAction(formattedAction);
+  //     onActionUpdate(updatedAction);
+  //   } catch (error) {
+  //     setError('Failed to save action');
+  //     console.error('Error saving action:', error);
+  //   } finally {
+  //     setIsLoadingSaving(false);
+  //   }
+  // };
 
   // Handle generate labels
   const generateLabels = async (description: string | undefined) => {
@@ -92,8 +96,11 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
         projectAction.descriptions.push({ description: description })
         projectAction.active_description = projectAction.descriptions.length - 1;
       }
-      const formattedAction = formatLabelsJson({ ...projectAction });
-      const labels = await actionService.generateLabels(formatLabelsJson(formattedAction));
+      console.log('Project action before generating labels:', projectAction);
+      const formattedAction = formatActionJson(JSON.parse(JSON.stringify(projectAction)));
+      console.log('Formatted action for label generation:', formattedAction);
+      const labels = await actionService.generateLabels(formattedAction);
+      console.log('Generated labels:', labels);
         // Add the generated labels in the active description of the action
         const updatedDescriptions = [...(projectAction.descriptions || [])];
         updatedDescriptions[projectAction.active_description] = {
@@ -101,10 +108,12 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
           version: projectAction.descriptions?.length || 0,
           labels: [...(updatedDescriptions[projectAction.active_description].labels || []), labels]
         };
+        console.log('Updated descriptions:', updatedDescriptions);
         const updatedAction = {
           ...formattedAction,
           descriptions: updatedDescriptions
         };
+        console.log('Updated action:', updatedAction);
   
         onActionUpdate(updatedAction);
 
@@ -123,7 +132,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
 
     try {
       // Make a copy of action to avoid mutating the original object
-      const formattedAction = formatLabelsJson({ ...projectAction });
+      const formattedAction = formatActionJson({ ...projectAction });
       const code = await actionService.generateCode(formattedAction);
     } catch (error) {
       setError('Failed to save action');
@@ -140,7 +149,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
         >
           ← Back to Actions
         </button>
-        {!isLoading && (
+        {/* {!isLoading && (
           <button
             onClick={handleSave}
             disabled={isLoadingSaving || !projectAction?.operation?.id}
@@ -148,7 +157,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
           >
             {isLoadingSaving ? 'Saving...' : 'Save Action'}
           </button>  
-        )}
+        )} */}
       </div>
 
       {error && (
@@ -181,6 +190,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
                 <LabelForm
                   labels={projectAction.descriptions?.[projectAction.active_description]?.labels}
                   generateCode={generateCode}
+                  selectedOperation={projectAction.operation}
                 />
               )}
             </>

@@ -48,6 +48,7 @@ export const Dashboard: React.FC = () => {
     setIsLoadingProject(true);
     projectService.getProjectDetails(projectId, actionId).then((projectData) => {
       setProject(projectData);
+      console.log("Loaded project", projectData);
       setFileColumns(projectData?.file?.data?.[0] ? Object.keys(projectData.file.data[0]) : []);
     }).catch((error) => {
       console.error('Failed to load project:', error);
@@ -92,6 +93,11 @@ export const Dashboard: React.FC = () => {
         active_action: action,
         actions: updatedActions
       });
+      console.log("Updated project", {
+        ...project,
+        active_action: action,
+        actions: updatedActions
+      })
     }
   };
 
@@ -174,7 +180,7 @@ export const Dashboard: React.FC = () => {
                 <Split 
                   className="flex flex-1 w-full"
                   sizes={[50, 50]}
-                  minSize={300}
+                  minSize={350}
                   gutterSize={4}
                 >
                   <div className="flex flex-col overflow-auto">

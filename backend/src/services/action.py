@@ -317,11 +317,11 @@ def generate_action_labels(action: Action) -> Labels:
     }
 
     output = [
-        [{"Person": "John Doe"}, {"Label": "john doe"}],
-        [{"Person": "Jane Smith"}, {"Label": "jane smith"}],
-        [{"Person": "Bob Johnson"}, {"Label": "bob johnson"}],
-        [{"Person": "Mary Williams"}, {"Label": "mary williams"}],
-        [{"Person": "James Brown",}, {"Label": "james brown"}]
+        [{"Person": "John Doe", "Age": 30, "Location": "New York", "Income": 50000, "Married": "Yes", "Kids": 3, "Hobbies": "Football", "Favorite Dish": "Dönner"}, {"Label": "john doe"}],
+        [{"Person": "Jane Smith", "Age": 25, "Location": "Los Angeles", "Income": 60000, "Married": "No", "Kids": 0, "Hobbies": "Reading", "Favorite Dish": "Pasta"}, {"Label": "jane smith"}],
+        [{"Person": "Bob Johnson", "Age": 40, "Location": "Chicago", "Income": 70000, "Married": "Yes", "Kids": 2, "Hobbies": "Golf", "Favorite Dish": "Steak"}, {"Label": "bob johnson"}],
+        [{"Person": "Mary Williams", "Age": 35, "Location": "Houston", "Income": 80000, "Married": "No", "Kids": 1, "Hobbies": "Cooking", "Favorite Dish": "Tacos"}, {"Label": "mary williams"}],
+        [{"Person": "James Brown", "Age": 50, "Location": "Phoenix", "Income": 90000, "Married": "Yes", "Kids": 4, "Hobbies": "Traveling", "Favorite Dish": "Sushi"}, {"Label": "james brown"}]
     ]
 
     saved_action = update_action(action.id, action)
@@ -419,3 +419,25 @@ def generate_action_labels(action: Action) -> Labels:
     #         "Age": 50,
     #     }, "james brown"]
     # ]
+
+
+def update_labels(labels: Labels) -> None:
+    """Update labels for an action."""
+    with get_db() as conn:
+        # Check if the label exists
+        existing_labels = conn.execute("""
+            SELECT id FROM labels WHERE id = ?
+        """, [labels.id]).fetchone()
+
+        if not existing_labels:
+            raise ValueError("Label not found")
+
+        # If it exists, update it
+        conn.execute("""
+            UPDATE labels SET 
+                json = ?
+            WHERE id = ?
+        """, [
+            json.dumps(labels.json),
+            labels.id
+        ])
