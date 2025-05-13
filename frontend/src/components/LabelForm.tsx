@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Labels } from '../types/labels';
 
 interface LabelFormProps {
-    labels: Labels[];
+    labels: Labels[] | undefined; 
     generateCode: () => void;
 }
 

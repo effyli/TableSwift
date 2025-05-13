@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Operation } from '../types/operation';
 import { Action } from '../types/action';
 import { FaRegEdit } from "react-icons/fa";
@@ -10,11 +10,10 @@ interface ActionFormProps {
     fileColumn: string | undefined;
     descriptions: Descriptions[] | undefined;
     activeDescription: number;
-    setActiveDescription: (count: number) => void;
     operations: Operation[];
     fileColumns: string[];
     onFieldChange: (field: keyof Action, value: any) => void;
-    generateLabels: () => void;
+    generateLabels: (description: string | undefined) => void;
     error: string | null;
 }
 
@@ -23,7 +22,6 @@ export const ActionForm: React.FC<ActionFormProps> = ({
     fileColumn,
     descriptions,
     activeDescription,
-    setActiveDescription,
     operations,
     fileColumns,
     onFieldChange,
@@ -31,15 +29,40 @@ export const ActionForm: React.FC<ActionFormProps> = ({
     error,
 }) => {
     const [isLoadingGenerating, setIsLoadingGenerating] = useState(false);
+    const [descriptionDisabled, setDescriptionDisabled] = useState(true);
+    const [adjustedDescription, setAdjustedDescription] = useState<string | undefined>(undefined);
+
+    const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
     useEffect(() => {
-        onFieldChange('active_description', activeDescription);
-    }, [activeDescription]);
+        if (descriptions && descriptions.length <= 0) {
+            setDescriptionDisabled(false);
+        }
+    }, [descriptions]);
+
+    const openDescriptionEditor = () => {
+        setAdjustedDescription(descriptions?.[activeDescription]?.description);
+        setDescriptionDisabled(false);
+        // Focus the textarea and move cursor to end after enabling it
+        setTimeout(() => {
+            const textarea = descriptionRef.current;
+            if (textarea) {
+                textarea.focus();
+                const length = textarea.value.length;
+                textarea.setSelectionRange(length, length);
+            }
+        }, 0);
+    };
+
+    const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setAdjustedDescription(e.target.value);
+    };
 
     const handleGenerateLabels = () => {
         setIsLoadingGenerating(true);
+        setDescriptionDisabled(true);
         try {
-            generateLabels();
+            generateLabels(adjustedDescription);
         }
         catch (err) {
             console.error('Error generating labels:', err);
@@ -62,9 +85,9 @@ export const ActionForm: React.FC<ActionFormProps> = ({
                         Operation
                     </label>
                     <select
-                        className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
+                        className={`w-full ${descriptions && descriptions.length > 0 && descriptions[0].id !== undefined ? 'bg-black-light border border-black-light' : 'bg-black-lighter border border-black-lighter'} rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500`}
                         value={selectedOperation || ''}
-                        disabled={descriptions && descriptions.length > 0 && descriptions[activeDescription].id !== undefined}
+                        disabled={descriptions && descriptions.length > 0 && descriptions[0].id !== undefined}
                         onChange={(e) => {
                             const selectedOp = operations.find(op => op.id === parseInt(e.target.value));
                             onFieldChange('operation', e.target.value ? { id: parseInt(e.target.value), name: selectedOp?.name || '' } : null);
@@ -84,9 +107,9 @@ export const ActionForm: React.FC<ActionFormProps> = ({
                         Column
                     </label>
                     <select
-                        className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
+                        className={`w-full ${descriptions && descriptions.length > 0 && descriptions[0].id !== undefined ? 'bg-black-light border border-black-light' : 'bg-black-lighter border border-black-lighter'} rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500`}
                         value={fileColumn || ''}
-                        disabled={descriptions && descriptions.length > 0 && descriptions[activeDescription].id !== undefined}
+                        disabled={descriptions && descriptions.length > 0 && descriptions[0].id !== undefined}
                         onChange={(e) => onFieldChange('file_column', e.target.value)}
                     >
                         <option value="">Select a column</option>
@@ -104,46 +127,47 @@ export const ActionForm: React.FC<ActionFormProps> = ({
                     Description
                 </label>
                 <textarea
-                    value={descriptions?.[activeDescription]?.description || ''}
-                    disabled={descriptions && descriptions.length > 0 && descriptions[activeDescription].id !== undefined}
-                    onChange={(e) => {
-                        if (!descriptions) return;
-                        const updatedDescriptions = [...descriptions];
-                        updatedDescriptions[activeDescription] = {
-                            ...updatedDescriptions[activeDescription],
-                            description: e.target.value
-                        };
-                        onFieldChange('descriptions', updatedDescriptions);
-                    }}
-                    className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500 max-h-[300px] min-h-[100px]"
+                    ref={descriptionRef}
+                    value={descriptionDisabled ? descriptions?.[activeDescription]?.description || '' : adjustedDescription}
+                    disabled={descriptionDisabled}
+                    onChange={(e) => handleDescriptionChange(e)}
+                    className={`w-full ${descriptionDisabled ? 'bg-black-light border border-black-light' : 'bg-black-lighter border border-black-lighter'} rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500 max-h-[300px] min-h-[100px]`}
                     placeholder="Enter action description"
                 />
             </div>
 
-            <div className='flex justify-between items-center px-2'>
-                {descriptions && descriptions.length > 0 && descriptions[activeDescription].id !== undefined ? (
-                    <>
-                    <button className='flex items-center gap-2 text-gray-400 hover:text-gray-300'>
-                        <FaRegEdit />
-                    </button>
-                    <div className='flex gap-1 text-sm'>
-                        <button onClick={() => setActiveDescription(activeDescription - 1)} disabled={activeDescription === 0}>
-                            <MdArrowBackIos />
+            <div className='mt-1'>
+                {descriptionDisabled ? (
+                    <div className='flex justify-between items-center'>
+                        <button className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg' onClick={() => openDescriptionEditor()}>
+                            <FaRegEdit />
                         </button>
-                        <span>{activeDescription + 1}/{descriptions?.length}</span>
-                        <button onClick={() => setActiveDescription(activeDescription + 1)} disabled={activeDescription === 4}>
-                            <MdArrowForwardIos />
+                        <div className='flex items-center gap-2'>
+                            <button onClick={() => onFieldChange('active_description', activeDescription - 1)} disabled={activeDescription === 0}>
+                                <MdArrowBackIos />
+                            </button>
+                            <span>{activeDescription + 1}/{descriptions?.length}</span>
+                            <button onClick={() => onFieldChange('active_description', activeDescription + 1)} disabled={descriptions && activeDescription === descriptions.length - 1}>
+                                <MdArrowForwardIos />
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className='flex items-center gap-x-2'>
+                        <button
+                            onClick={() => setDescriptionDisabled(true)}
+                            className="bg-black-lighter hover:bg-black-lightest text-white px-4 py-2 rounded-lg"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={() => handleGenerateLabels()}
+                            disabled={isLoadingGenerating || !selectedOperation}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                            {isLoadingGenerating ? 'Generating...' : descriptions && descriptions.length > 0 ? 'Regenerate Labels' : 'Generate Labels'}
                         </button>
                     </div>
-                    </>
-                ) : (
-                    <button
-                        onClick={() => handleGenerateLabels()}
-                        disabled={isLoadingGenerating || !selectedOperation}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-                    >
-                        {isLoadingGenerating ? 'Generating...' : 'Generate Labels'}
-                    </button>
                 )}
             </div>
 

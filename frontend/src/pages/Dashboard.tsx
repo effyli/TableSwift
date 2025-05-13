@@ -21,7 +21,6 @@ export const Dashboard: React.FC = () => {
   const [isLoadingProject, setIsLoadingProject] = useState(true);
 
   const [project, setProject] = useState<Project | null>(null);
-  const [activeDescription, setActiveDescription] = useState<number>(0);
   const [operations, setOperations] = useState<Operation[]>([]);
   const [fileColumns, setFileColumns] = useState<string[]>([]);
   
@@ -49,8 +48,6 @@ export const Dashboard: React.FC = () => {
     setIsLoadingProject(true);
     projectService.getProjectDetails(projectId, actionId).then((projectData) => {
       setProject(projectData);
-      console.log('Project data:', projectData);
-      setActiveDescription(projectData.active_action?.descriptions && projectData.active_action?.descriptions.length > 0 ? projectData.active_action.descriptions.length - 1 : 0);
       setFileColumns(projectData?.file?.data?.[0] ? Object.keys(projectData.file.data[0]) : []);
     }).catch((error) => {
       console.error('Failed to load project:', error);
@@ -90,14 +87,11 @@ export const Dashboard: React.FC = () => {
         } : a
       ).sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime());
 
-      setActiveDescription(action.descriptions && action.descriptions.length > 0 ? action.descriptions.length - 1 : 0);
-      
       setProject({
         ...project,
         active_action: action,
         actions: updatedActions
       });
-      console.log('Updated action:', action); 
     }
   };
 
@@ -153,8 +147,6 @@ export const Dashboard: React.FC = () => {
                         projectAction={project?.active_action}
                         isLoadingProject={isLoadingProject}
                         onActionUpdate={handleSetActionUpdate}
-                        activeDescription={activeDescription}
-                        setActiveDescription={setActiveDescription}
                         operations={operations}
                         fileColumns={fileColumns}
                       />
@@ -183,7 +175,7 @@ export const Dashboard: React.FC = () => {
                   className="flex flex-1 w-full"
                   sizes={[50, 50]}
                   minSize={300}
-                  gutterSize={12}
+                  gutterSize={4}
                 >
                   <div className="flex flex-col overflow-auto">
                     {actionId ? (
@@ -191,8 +183,6 @@ export const Dashboard: React.FC = () => {
                         projectAction={project?.active_action}
                         isLoadingProject={isLoadingProject}
                         onActionUpdate={handleSetActionUpdate}
-                        activeDescription={activeDescription}
-                        setActiveDescription={setActiveDescription}
                         operations={operations}
                         fileColumns={fileColumns}
                       />

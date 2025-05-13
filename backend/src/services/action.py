@@ -104,7 +104,7 @@ def get_action(action_id: int) -> Action:
             datetime=action_result[2],
             operation=Operation(id=action_result[3], name=action_result[4]) if action_result[3] else None,
             file_column=action_result[5],
-            active_description=0,
+            active_description=len(descriptions) - 1,
             descriptions=descriptions
         )
 

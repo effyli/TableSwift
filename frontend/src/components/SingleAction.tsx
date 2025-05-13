@@ -11,34 +11,25 @@ interface SingleActionProps {
     projectAction: Action | null | undefined;
     isLoadingProject: boolean;
     onActionUpdate: (action: Action | null) => void;
-    activeDescription: number;
-    setActiveDescription: (count: number) => void;
     operations: Operation[];
     fileColumns: string[];
 }
 
-export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoadingProject, onActionUpdate, operations, fileColumns, activeDescription, setActiveDescription }) => {
+export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoadingProject, onActionUpdate, operations, fileColumns }) => {
   const { projectId, actionId } = useParams();
   const navigate = useNavigate();
 
-  const [action, setAction] = useState<Action | null>(projectAction || null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isLoadingSaving, setIsLoadingSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log('Project action:', projectAction);
-    setAction(projectAction || null);
-    setIsLoading(false);
-  }, [projectAction]);
-
-  useEffect(() => {
     // Load the action only when not loaded by the full project in dashboard
-    if ((!action && actionId && !isLoadingProject) || (action && action.id !== parseInt(actionId ?? '') && !isLoadingProject)) {
+    if ((!projectAction && actionId && !isLoadingProject) || (projectAction && actionId && projectAction.id !== parseInt(actionId) && !isLoadingProject)) {
       setIsLoading(true);
       onActionUpdate(null);
       
-      actionService.getAction(parseInt(actionId!)).then((actionData) => {
+      actionService.getAction(parseInt(actionId)).then((actionData) => {
         onActionUpdate(actionData);
         
       }).catch((error) => {
@@ -59,10 +50,10 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
   };
 
   const handleActionChange = (field: keyof Action, value: any) => {
-    if (!action || !(field in action)) return; // TODO reload page?
+    if (!projectAction || !(field in projectAction)) return; // TODO reload page?
 
     onActionUpdate({
-      ...action,
+      ...projectAction,
       [field]: value
     } as Action);
   }
@@ -70,15 +61,14 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
   // Handle save action
   const handleSave = async () => {
     setIsLoadingSaving(true);
-    if (!action) {
+    if (!projectAction) {
       setError('Please fill in all fields');
       return;
     }
 
     try {
       // Make a copy of action to avoid mutating the original object
-      const formattedAction = formatLabelsJson({ ...action });
-      console.log('Saving action:', formattedAction);
+      const formattedAction = formatLabelsJson({ ...projectAction });
       const updatedAction = await actionService.updateAction(formattedAction);
       onActionUpdate(updatedAction);
     } catch (error) {
@@ -90,61 +80,60 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
   };
 
   // Handle generate labels
-  const generateLabels = async () => {
-    setIsLoadingSaving(true);
-    if (!action) {
+  const generateLabels = async (description: string | undefined) => {
+    if (!projectAction) {
       setError('Please fill in all fields');
       return;
     }
 
     try { 
       // Make a copy of action to avoid mutating the original object
-      const formattedAction = formatLabelsJson({ ...action });
+      if (description) {
+        projectAction.descriptions.push({ description: description })
+        projectAction.active_description = projectAction.descriptions.length - 1;
+      }
+      const formattedAction = formatLabelsJson({ ...projectAction });
       const labels = await actionService.generateLabels(formatLabelsJson(formattedAction));
+        // Add the generated labels in the active description of the action
+        const updatedDescriptions = [...(projectAction.descriptions || [])];
+        updatedDescriptions[projectAction.active_description] = {
+          ...updatedDescriptions[projectAction.active_description],
+          version: projectAction.descriptions?.length || 0,
+          labels: [...(updatedDescriptions[projectAction.active_description].labels || []), labels]
+        };
+        const updatedAction = {
+          ...formattedAction,
+          descriptions: updatedDescriptions
+        };
+  
+        onActionUpdate(updatedAction);
 
-      const updatedDescriptions = [...(action.descriptions || [])];
-      updatedDescriptions[activeDescription] = {
-        ...updatedDescriptions[activeDescription],
-        version: action.descriptions?.length || 0,
-        labels: [...(updatedDescriptions[activeDescription].labels || []), labels]
-      };
-
-      const updatedAction = {
-        ...formattedAction,
-        descriptions: updatedDescriptions
-      };
-      onActionUpdate(updatedAction);
     } catch (error) {
       setError('Failed to save action');
       console.error('Error saving action:', error);
-    } finally {
-      setIsLoadingSaving(false);
     }
   }
 
   // Handle generate code
   const generateCode = async () => {
-    setIsLoadingSaving(true);
-    if (!action) {
+    if (!projectAction) {
       setError('Please fill in all fields');
       return;
     }
 
     try {
       // Make a copy of action to avoid mutating the original object
-      const formattedAction = formatLabelsJson({ ...action });
+      const formattedAction = formatLabelsJson({ ...projectAction });
       const code = await actionService.generateCode(formattedAction);
     } catch (error) {
       setError('Failed to save action');
       console.error('Error saving action:', error);
-    } finally {
-      setIsLoadingSaving(false);
     }
   };
 
   return (
-    <div className="bg-black-light border-r border-black-lighter p-8 pb-24 pt-0 h-full flex flex-col overflow-auto custom-scrollbar">
-      <div className="bg-black-light sticky top-0 flex items-center justify-between py-4">
+    <div className="bg-black border-r border-black-lighter p-8 pb-24 pt-0 h-full flex flex-col overflow-auto custom-scrollbar">
+      <div className="bg-black sticky top-0 flex items-center justify-between py-4">
         <button
           onClick={handleBack}
           className="text-indigo-500 hover:text-indigo-400 mr-4"
@@ -154,7 +143,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
         {!isLoading && (
           <button
             onClick={handleSave}
-            disabled={isLoadingSaving || !action?.operation?.id}
+            disabled={isLoadingSaving || !projectAction?.operation?.id}
             className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
           >
             {isLoadingSaving ? 'Saving...' : 'Save Action'}
@@ -174,14 +163,13 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
         </div>
       ) : (
         <>
-          {action && (
+          {projectAction && (
             <>
-              <ActionForm 
-                selectedOperation={action.operation?.id || undefined}
-                fileColumn={action.file_column}
-                descriptions={action.descriptions}
-                activeDescription={activeDescription}
-                setActiveDescription={setActiveDescription}
+              <ActionForm
+                selectedOperation={projectAction.operation?.id || undefined}
+                fileColumn={projectAction.file_column}
+                descriptions={projectAction.descriptions}
+                activeDescription={projectAction.active_description}
                 operations={operations}
                 fileColumns={fileColumns}
                 onFieldChange={handleActionChange}
@@ -189,9 +177,9 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
                 error={error}
               />
 
-              {action.descriptions?.[activeDescription]?.labels && (
+              {projectAction.descriptions?.[projectAction.active_description]?.labels && (
                 <LabelForm
-                  labels={action.descriptions?.[activeDescription].labels}
+                  labels={projectAction.descriptions?.[projectAction.active_description]?.labels}
                   generateCode={generateCode}
                 />
               )}
