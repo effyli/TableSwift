@@ -138,6 +138,7 @@ def init_db():
                 id INTEGER PRIMARY KEY
                     DEFAULT nextval('label_id_seq'),
                 json VARCHAR NOT NULL,
+                version INTEGER NOT NULL,
                 description_id INTEGER NOT NULL
             );
         """)

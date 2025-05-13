@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Labels } from '../types/labels';
 
 interface LabelFormProps {
-    labels: Labels;
+    labels: Labels[];
     generateCode: () => void;
 }
 

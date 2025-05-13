@@ -106,7 +106,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
       updatedDescriptions[activeDescription] = {
         ...updatedDescriptions[activeDescription],
         version: action.descriptions?.length || 0,
-        labels: labels
+        labels: [...(updatedDescriptions[activeDescription].labels || []), labels]
       };
 
       const updatedAction = {

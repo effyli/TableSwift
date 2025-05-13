@@ -5,4 +5,5 @@ from .code import Code
 class Labels(BaseModel):
     id: int
     json: Json
+    version: int
     codes: List[Code]

@@ -1,12 +1,14 @@
 from datetime import datetime
+from typing import List
+from ..models.code import Code
 from ..models.action import ActionBase, Action, ActionCreate
 from ..models.operation import Operation
+from ..models.labels import Labels
+from ..models.description import Description
 from ..database import get_db
 from uuid import UUID
 import pandas as pd
 import json
-from ..models.labels import Labels
-from ..models.description import Description
 
 
 def create_action(action_create: ActionCreate) -> ActionBase:
@@ -49,11 +51,8 @@ def get_action(action_id: int) -> Action:
             SELECT 
             d.id, 
             d.description, 
-            d.version,
-            l.id as label_id,
-            l.json
+            d.version
             FROM description d
-            LEFT JOIN labels l ON l.description_id = d.id
             WHERE d.action_id = ?
             ORDER BY d.version
         """, [action_id]).fetchall()
@@ -61,33 +60,43 @@ def get_action(action_id: int) -> Action:
             
         descriptions = []
         for desc in descriptions_result:
-            # Get all codes for this description
-            codes_result = conn.execute("""
-                SELECT id, code, version
-                FROM codes 
-                WHERE label_id = ?
+            # Get all labels for this description
+            labels_result = conn.execute("""
+                SELECT id, json, version
+                FROM labels
+                WHERE description_id = ?
                 ORDER BY version
-            """, [desc[3]]).fetchall()
+            """, [desc[0]]).fetchall()
 
-            codes = [
-                {
-                    'id': code[0],
-                    'code': code[1],
-                    'version': code[2]
-                }
-                for code in codes_result
-            ]
+            labels = []
+            for label in labels_result:
+                # Get all codes for this description
+                codes_result = conn.execute("""
+                    SELECT id, code, version
+                    FROM codes 
+                    WHERE label_id = ?
+                    ORDER BY version
+                """, [label[0]]).fetchall()
 
-            descriptions.append({
-                'id': desc[0],
-                'description': desc[1],
-                'version': desc[2],
-                'labels': {
-                    'id': desc[3],
-                    'json': desc[4],
-                    'codes': codes
-                } if desc[3] else None
-            })
+                codes = [Code(
+                    id=code[0],
+                    code=code[1],
+                    version=code[2]
+                ) for code in codes_result]
+
+                labels.append(Labels(
+                    id=label[0],
+                    json=label[1],
+                    version=label[2],
+                    codes=codes
+                ))
+
+            descriptions.append(Description(
+                id=desc[0],
+                description=desc[1],
+                version=desc[2],
+                labels=labels
+            ))
 
         return Action(
             id=action_result[0],
@@ -156,35 +165,38 @@ def save_codes() -> None:
     pass
 
 
-def save_labels(desc_id: int, labels: Labels) -> None:
+def save_labels(desc_id: int, labels: List[Labels]) -> None:
     with get_db() as conn:
-        # Check if the labels exist
-        existing_labels = conn.execute("""
-            SELECT id FROM labels WHERE id = ?
-        """, [labels.id]).fetchone()
+        for label in labels:
+            # Check if the label exists
+            existing_labels = conn.execute("""
+                SELECT id FROM labels WHERE id = ?
+            """, [label.id]).fetchone()
 
-        if not existing_labels:
-            # If it doesn't exist, create a new one
-            conn.execute("""
-                INSERT INTO labels (json, description_id)
-                VALUES (?, ?)
-            """, [
-                json.dumps(labels.json),
-                desc_id
-            ])
-        else:
-            # If it exists, update it
-            conn.execute("""
-                UPDATE labels SET 
-                    json = ?,
-                WHERE id = ?
-            """, [
-                json.dumps(labels.json),
-                labels.id
-            ])
-
-            # TODO save codes
-            save_codes(labels.id, labels.codes)
+            if not existing_labels:
+                # If it doesn't exist, create a new one
+                conn.execute("""
+                    INSERT INTO labels (json, version, description_id)
+                    VALUES (?, COALESCE((SELECT CAST(MAX(version) AS INTEGER) + 1 FROM labels WHERE description_id = ?), 1), ?)
+                """, [
+                    json.dumps(label.json),
+                    desc_id,  # For the version subquery
+                    desc_id
+                ])
+            else:
+                # If it exists, update it
+                conn.execute("""
+                    UPDATE labels SET 
+                        json = ?,
+                    WHERE id = ?
+                """, [
+                    json.dumps(label.json),
+                    label.id
+                ])
+                
+                # TODO save codes
+                if label.codes:
+                    save_codes(label.id, label.codes)
 
 
 def save_descriptions(action_id: int, descriptions: list[Description]) -> None:
@@ -315,21 +327,30 @@ def generate_action_labels(action: Action) -> Labels:
     saved_action = update_action(action.id, action)
 
     with get_db() as conn:
-        # Get max version and increment by 1, or use 1 if no previous versions exist
+        # First get the next version number
+        version_result = conn.execute("""
+            SELECT COALESCE(MAX(version) + 1, 1)
+            FROM labels
+            WHERE description_id = ?
+        """, [saved_action.descriptions[action.active_description].id]).fetchone()
+        
+        next_version = version_result[0]
+
+        # Then do the insert
         result = conn.execute("""
-            INSERT INTO labels (json, description_id)
-            VALUES (?, ?)
-            RETURNING id, COALESCE((SELECT MAX(version) + 1 FROM labels WHERE description_id = ?), 1) as version
+            INSERT INTO labels (json, description_id, version)
+            VALUES (?, ?, ?)
+            RETURNING id
         """, [
             json.dumps(output),
             saved_action.descriptions[action.active_description].id,
-            saved_action.descriptions[action.active_description].id
+            next_version
         ]).fetchone()
 
     return Labels(
         id=result[0],
         json=json.dumps(output),
-        version=result[1],
+        version=next_version,
         codes=[]
     )
 
