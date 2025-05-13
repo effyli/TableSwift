@@ -2,7 +2,8 @@ import { Code } from './code';
 
 export interface Labels {
     id: number;
-    json: any;
+    description: string;
+    json: any | null;
     version: number;
     codes: Code[];
 }

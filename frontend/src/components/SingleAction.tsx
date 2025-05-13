@@ -5,19 +5,19 @@ import { Operation } from '../types/operation';
 import { actionService } from '../services/action.service';
 import { ActionForm } from './ActionForm';
 import { LabelForm } from './LabelForm';
-import { formatActionJson } from '../util/formatAction';
+import { formatLabelsJson } from '../util/formatAction';
 
 interface SingleActionProps {
     projectAction: Action | null | undefined;
     isLoadingProject: boolean;
     onActionUpdate: (action: Action | null) => void;
-    activeLabels: number;
-    setActiveLabels: (count: number) => void;
+    activeDescription: number;
+    setActiveDescription: (count: number) => void;
     operations: Operation[];
     fileColumns: string[];
 }
 
-export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoadingProject, onActionUpdate, operations, fileColumns, activeLabels, setActiveLabels }) => {
+export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoadingProject, onActionUpdate, operations, fileColumns, activeDescription, setActiveDescription }) => {
   const { projectId, actionId } = useParams();
   const navigate = useNavigate();
 
@@ -27,6 +27,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('Project action:', projectAction);
     setAction(projectAction || null);
     setIsLoading(false);
   }, [projectAction]);
@@ -58,7 +59,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
   };
 
   const handleActionChange = (field: keyof Action, value: any) => {
-    if (!action || !(field in action)) return; // TODO reload page
+    if (!action || !(field in action)) return; // TODO reload page?
 
     onActionUpdate({
       ...action,
@@ -76,7 +77,8 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
 
     try {
       // Make a copy of action to avoid mutating the original object
-      const formattedAction = formatActionJson({ ...action });
+      const formattedAction = formatLabelsJson({ ...action });
+      console.log('Saving action:', formattedAction);
       const updatedAction = await actionService.updateAction(formattedAction);
       onActionUpdate(updatedAction);
     } catch (error) {
@@ -97,12 +99,19 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
 
     try { 
       // Make a copy of action to avoid mutating the original object
-      const formattedAction = formatActionJson({ ...action });
-      const labels = await actionService.generateLabels(formatActionJson(formattedAction));
+      const formattedAction = formatLabelsJson({ ...action });
+      const labels = await actionService.generateLabels(formatLabelsJson(formattedAction));
+
+      const updatedDescriptions = [...(action.descriptions || [])];
+      updatedDescriptions[activeDescription] = {
+        ...updatedDescriptions[activeDescription],
+        version: action.descriptions?.length || 0,
+        labels: labels
+      };
 
       const updatedAction = {
         ...formattedAction,
-        labels: [...(action.labels || []), ...[labels]]
+        descriptions: updatedDescriptions
       };
       onActionUpdate(updatedAction);
     } catch (error) {
@@ -123,7 +132,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
 
     try {
       // Make a copy of action to avoid mutating the original object
-      const formattedAction = formatActionJson({ ...action });
+      const formattedAction = formatLabelsJson({ ...action });
       const code = await actionService.generateCode(formattedAction);
     } catch (error) {
       setError('Failed to save action');
@@ -168,10 +177,11 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
           {action && (
             <>
               <ActionForm 
-                selectedOperation={action.operation?.id || null}
+                selectedOperation={action.operation?.id || undefined}
                 fileColumn={action.file_column}
-                description={action.description}
-                isSaved={action.labels ? action.labels.length > 0 : false}
+                descriptions={action.descriptions}
+                activeDescription={activeDescription}
+                setActiveDescription={setActiveDescription}
                 operations={operations}
                 fileColumns={fileColumns}
                 onFieldChange={handleActionChange}
@@ -179,12 +189,10 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
                 error={error}
               />
 
-              {action.labels && (
-                <LabelForm 
-                  labels={action.labels} 
-                  generateCode={generateCode} 
-                  activeLabels={activeLabels}
-                  setActiveLabels={setActiveLabels}
+              {action.descriptions?.[activeDescription]?.labels && (
+                <LabelForm
+                  labels={action.descriptions?.[activeDescription].labels}
+                  generateCode={generateCode}
                 />
               )}
             </>

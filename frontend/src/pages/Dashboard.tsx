@@ -21,7 +21,7 @@ export const Dashboard: React.FC = () => {
   const [isLoadingProject, setIsLoadingProject] = useState(true);
 
   const [project, setProject] = useState<Project | null>(null);
-  const [activeLabels, setActiveLabels] = useState<number>(0);
+  const [activeDescription, setActiveDescription] = useState<number>(0);
   const [operations, setOperations] = useState<Operation[]>([]);
   const [fileColumns, setFileColumns] = useState<string[]>([]);
   
@@ -49,7 +49,8 @@ export const Dashboard: React.FC = () => {
     setIsLoadingProject(true);
     projectService.getProjectDetails(projectId, actionId).then((projectData) => {
       setProject(projectData);
-      setActiveLabels(projectData.active_action?.labels ? projectData.active_action.labels.length - 1 : 0);
+      console.log('Project data:', projectData);
+      setActiveDescription(projectData.active_action?.descriptions && projectData.active_action?.descriptions.length > 0 ? projectData.active_action.descriptions.length - 1 : 0);
       setFileColumns(projectData?.file?.data?.[0] ? Object.keys(projectData.file.data[0]) : []);
     }).catch((error) => {
       console.error('Failed to load project:', error);
@@ -89,13 +90,14 @@ export const Dashboard: React.FC = () => {
         } : a
       ).sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime());
 
-      setActiveLabels(action.labels ? action.labels.length - 1 : 0);
+      setActiveDescription(action.descriptions && action.descriptions.length > 0 ? action.descriptions.length - 1 : 0);
       
       setProject({
         ...project,
         active_action: action,
         actions: updatedActions
       });
+      console.log('Updated action:', action); 
     }
   };
 
@@ -151,8 +153,8 @@ export const Dashboard: React.FC = () => {
                         projectAction={project?.active_action}
                         isLoadingProject={isLoadingProject}
                         onActionUpdate={handleSetActionUpdate}
-                        activeLabels={activeLabels}
-                        setActiveLabels={setActiveLabels}
+                        activeDescription={activeDescription}
+                        setActiveDescription={setActiveDescription}
                         operations={operations}
                         fileColumns={fileColumns}
                       />
@@ -189,8 +191,8 @@ export const Dashboard: React.FC = () => {
                         projectAction={project?.active_action}
                         isLoadingProject={isLoadingProject}
                         onActionUpdate={handleSetActionUpdate}
-                        activeLabels={activeLabels}
-                        setActiveLabels={setActiveLabels}
+                        activeDescription={activeDescription}
+                        setActiveDescription={setActiveDescription}
                         operations={operations}
                         fileColumns={fileColumns}
                       />

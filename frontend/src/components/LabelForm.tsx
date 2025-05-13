@@ -2,13 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Labels } from '../types/labels';
 
 interface LabelFormProps {
-    labels: Labels[];
+    labels: Labels;
     generateCode: () => void;
-    activeLabels: number;
-    setActiveLabels: (count: number) => void;
 }
 
-export const LabelForm: React.FC<LabelFormProps> = ({ labels, generateCode, activeLabels, setActiveLabels }) => {
+export const LabelForm: React.FC<LabelFormProps> = ({ labels, generateCode }) => {
     const [isLoadingGenerating, setIsLoadingGenerating] = useState(false);
 
     const handleGenerateCode = () => {
@@ -25,11 +23,7 @@ export const LabelForm: React.FC<LabelFormProps> = ({ labels, generateCode, acti
     return (
         <div className="mt-12 border-t border-gray-700 pt-12">
             <h3 className="text-lg font-semibold text-white">Generated Code</h3>
-            <pre className="bg-gray-800 text-gray-300 p-4 rounded">{JSON.stringify(labels[activeLabels], null, 2)}</pre>
-            <div className="mt-4 flex gap-2">
-                <button onClick={() => {setActiveLabels(activeLabels - 1)}} disabled={activeLabels === 0}>Prev</button>
-                <button onClick={() => {setActiveLabels(activeLabels + 1)}} disabled={activeLabels === labels.length - 1}>Next</button>
-            </div>
+            {/* <pre className="bg-gray-800 text-gray-300 p-4 rounded">{JSON.stringify(labels[activeLabels], null, 2)}</pre> */}
             <button
                 onClick={() => handleGenerateCode()}
                 disabled={isLoadingGenerating}

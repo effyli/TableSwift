@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Operation } from '../types/operation';
 import { Action } from '../types/action';
 import { FaRegEdit } from "react-icons/fa";
 import { MdArrowBackIos, MdArrowForwardIos } from "react-icons/md";
+import { Descriptions } from '../types/description';
 
 interface ActionFormProps {
-    selectedOperation: number | null;
+    selectedOperation: number | undefined;
     fileColumn: string | undefined;
-    description: string | undefined;
-    isSaved: boolean;
+    descriptions: Descriptions[] | undefined;
+    activeDescription: number;
+    setActiveDescription: (count: number) => void;
     operations: Operation[];
     fileColumns: string[];
     onFieldChange: (field: keyof Action, value: any) => void;
@@ -19,8 +21,9 @@ interface ActionFormProps {
 export const ActionForm: React.FC<ActionFormProps> = ({
     selectedOperation,
     fileColumn,
-    description,
-    isSaved,
+    descriptions,
+    activeDescription,
+    setActiveDescription,
     operations,
     fileColumns,
     onFieldChange,
@@ -28,6 +31,10 @@ export const ActionForm: React.FC<ActionFormProps> = ({
     error,
 }) => {
     const [isLoadingGenerating, setIsLoadingGenerating] = useState(false);
+
+    useEffect(() => {
+        onFieldChange('active_description', activeDescription);
+    }, [activeDescription]);
 
     const handleGenerateLabels = () => {
         setIsLoadingGenerating(true);
@@ -57,7 +64,7 @@ export const ActionForm: React.FC<ActionFormProps> = ({
                     <select
                         className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
                         value={selectedOperation || ''}
-                        disabled={isSaved}
+                        disabled={descriptions && descriptions.length > 0 && descriptions[activeDescription].id !== undefined}
                         onChange={(e) => {
                             const selectedOp = operations.find(op => op.id === parseInt(e.target.value));
                             onFieldChange('operation', e.target.value ? { id: parseInt(e.target.value), name: selectedOp?.name || '' } : null);
@@ -79,7 +86,7 @@ export const ActionForm: React.FC<ActionFormProps> = ({
                     <select
                         className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
                         value={fileColumn || ''}
-                        disabled={isSaved}
+                        disabled={descriptions && descriptions.length > 0 && descriptions[activeDescription].id !== undefined}
                         onChange={(e) => onFieldChange('file_column', e.target.value)}
                     >
                         <option value="">Select a column</option>
@@ -97,17 +104,39 @@ export const ActionForm: React.FC<ActionFormProps> = ({
                     Description
                 </label>
                 <textarea
-                    value={description}
-                    disabled={isSaved}
-                    onChange={(e) => onFieldChange('description', e.target.value)}
+                    value={descriptions?.[activeDescription]?.description || ''}
+                    disabled={descriptions && descriptions.length > 0 && descriptions[activeDescription].id !== undefined}
+                    onChange={(e) => {
+                        if (!descriptions) return;
+                        const updatedDescriptions = [...descriptions];
+                        updatedDescriptions[activeDescription] = {
+                            ...updatedDescriptions[activeDescription],
+                            description: e.target.value
+                        };
+                        onFieldChange('descriptions', updatedDescriptions);
+                    }}
                     className="w-full bg-black-lighter border border-black-lighter rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500 max-h-[300px] min-h-[100px]"
                     placeholder="Enter action description"
-                    rows={4}
                 />
             </div>
 
             <div className='flex justify-between items-center px-2'>
-                {!isSaved ? (
+                {descriptions && descriptions.length > 0 && descriptions[activeDescription].id !== undefined ? (
+                    <>
+                    <button className='flex items-center gap-2 text-gray-400 hover:text-gray-300'>
+                        <FaRegEdit />
+                    </button>
+                    <div className='flex gap-1 text-sm'>
+                        <button onClick={() => setActiveDescription(activeDescription - 1)} disabled={activeDescription === 0}>
+                            <MdArrowBackIos />
+                        </button>
+                        <span>{activeDescription + 1}/{descriptions?.length}</span>
+                        <button onClick={() => setActiveDescription(activeDescription + 1)} disabled={activeDescription === 4}>
+                            <MdArrowForwardIos />
+                        </button>
+                    </div>
+                    </>
+                ) : (
                     <button
                         onClick={() => handleGenerateLabels()}
                         disabled={isLoadingGenerating || !selectedOperation}
@@ -115,21 +144,6 @@ export const ActionForm: React.FC<ActionFormProps> = ({
                     >
                         {isLoadingGenerating ? 'Generating...' : 'Generate Labels'}
                     </button>
-                ) : (
-                    <>
-                    <button className='flex items-center gap-2 text-gray-400 hover:text-gray-300'>
-                        <FaRegEdit />
-                    </button>
-                    <div className='flex gap-1 text-sm'>
-                        <button>
-                            <MdArrowBackIos />
-                        </button>
-                        <span>1/5</span>
-                        <button>
-                            <MdArrowForwardIos />
-                        </button>
-                    </div>
-                    </>
                 )}
             </div>
 

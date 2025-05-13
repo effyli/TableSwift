@@ -6,6 +6,7 @@ from uuid import UUID
 import pandas as pd
 import json
 from ..models.labels import Labels
+from ..models.description import Description
 
 
 def create_action(action_create: ActionCreate) -> ActionBase:
@@ -34,8 +35,7 @@ def get_action(action_id: int) -> Action:
                 a.datetime, 
                 a.operation_id,
                 o.name AS operation_name,
-                a.file_column, 
-                a.description
+                a.file_column 
             FROM actions a
             LEFT JOIN operations o ON a.operation_id = o.id
             WHERE a.id = ?
@@ -44,23 +44,30 @@ def get_action(action_id: int) -> Action:
         if not action_result:
             raise ValueError("Action not found")
 
-        # Get all labels for this action
-        labels_result = conn.execute("""
-            SELECT id, json, version
-            FROM labels 
-            WHERE action_id = ?
-            ORDER BY version
+        # Get all descriptions with their labels for this action
+        descriptions_result = conn.execute("""
+            SELECT 
+            d.id, 
+            d.description, 
+            d.version,
+            l.id as label_id,
+            l.json
+            FROM description d
+            LEFT JOIN labels l ON l.description_id = d.id
+            WHERE d.action_id = ?
+            ORDER BY d.version
         """, [action_id]).fetchall()
 
-        labels = []
-        for label in labels_result:
-            # Get all codes for this label
+            
+        descriptions = []
+        for desc in descriptions_result:
+            # Get all codes for this description
             codes_result = conn.execute("""
                 SELECT id, code, version
                 FROM codes 
                 WHERE label_id = ?
                 ORDER BY version
-            """, [label[0]]).fetchall()
+            """, [desc[3]]).fetchall()
 
             codes = [
                 {
@@ -71,21 +78,25 @@ def get_action(action_id: int) -> Action:
                 for code in codes_result
             ]
 
-            labels.append({
-                'id': label[0],
-                'json': label[1],
-                'version': label[2],
-                'codes': codes
+            descriptions.append({
+                'id': desc[0],
+                'description': desc[1],
+                'version': desc[2],
+                'labels': {
+                    'id': desc[3],
+                    'json': desc[4],
+                    'codes': codes
+                } if desc[3] else None
             })
-        
+
         return Action(
             id=action_result[0],
             project_id=action_result[1],
             datetime=action_result[2],
             operation=Operation(id=action_result[3], name=action_result[4]) if action_result[3] else None,
             file_column=action_result[5],
-            description=action_result[6],
-            labels=labels
+            active_description=0,
+            descriptions=descriptions
         )
 
 async def get_project_actions(project_id: UUID) -> list[ActionBase]:
@@ -140,6 +151,79 @@ def check_column_exists(action_id: int, column_name: str) -> bool:
             raise ValueError(f"Column '{column_name}' not found in file. Available columns: {', '.join(columns)}")
 
 
+def save_codes() -> None:
+    """Save codes to the database."""
+    pass
+
+
+def save_labels(desc_id: int, labels: Labels) -> None:
+    with get_db() as conn:
+        # Check if the labels exist
+        existing_labels = conn.execute("""
+            SELECT id FROM labels WHERE id = ?
+        """, [labels.id]).fetchone()
+
+        if not existing_labels:
+            # If it doesn't exist, create a new one
+            conn.execute("""
+                INSERT INTO labels (json, description_id)
+                VALUES (?, ?)
+            """, [
+                json.dumps(labels.json),
+                desc_id
+            ])
+        else:
+            # If it exists, update it
+            conn.execute("""
+                UPDATE labels SET 
+                    json = ?,
+                WHERE id = ?
+            """, [
+                json.dumps(labels.json),
+                labels.id
+            ])
+
+            # TODO save codes
+            save_codes(labels.id, labels.codes)
+
+
+def save_descriptions(action_id: int, descriptions: list[Description]) -> None:
+    with get_db() as conn:
+        for desc in descriptions:
+            # Check if the description exists
+            existing_desc = conn.execute("""
+                SELECT id FROM description WHERE id = ?
+            """, [desc.id]).fetchone()
+
+            if not existing_desc:
+                # If it doesn't exist, create a new one
+                conn.execute("""
+                    INSERT INTO description (description, version, action_id)
+                    VALUES (?, 
+                        COALESCE((SELECT CAST(MAX(version) AS INTEGER) + 1 
+                            FROM description 
+                            WHERE action_id = ?), 1),
+                        ?)
+                """, [
+                    desc.description,
+                    action_id,  # For the version subquery
+                    action_id
+                ])
+            else:
+                # If it exists, update it
+                conn.execute("""
+                    UPDATE description SET 
+                        description = ?,
+                    WHERE id = ?
+                """, [
+                    desc.description,
+                    desc.id
+                ])
+
+                if desc.labels:
+                    save_labels(desc.id, desc.labels)
+
+
 def update_action(action_id: int, action: Action) -> Action:
     """Update an action with new data."""
     with get_db() as conn:
@@ -155,18 +239,18 @@ def update_action(action_id: int, action: Action) -> Action:
             UPDATE actions
             SET operation_id = ?, 
                 file_column = ?, 
-                description = ?, 
                 datetime = CURRENT_TIMESTAMP
             WHERE id = ?
         """, [
             action.operation.id,
             action.file_column,
-            action.description,
             action_id
         ])
-        
+
+        save_descriptions(action_id, action.descriptions)
+
         return get_action(action_id)
-    
+
 def delete_action(action_id: int) -> None:
     """Delete an action and its related data by its ID."""
     with get_db() as conn:
@@ -184,13 +268,22 @@ def delete_action(action_id: int) -> None:
         conn.execute("""
             DELETE FROM codes 
             WHERE label_id IN (
-                SELECT id FROM labels WHERE action_id = ?
+                SELECT id FROM labels WHERE description_id IN (
+                    SELECT id FROM description WHERE action_id = ?
+                )
             )
         """, [action_id])
 
         # Then delete the labels
         conn.execute("""
-            DELETE FROM labels WHERE action_id = ?
+            DELETE FROM labels WHERE description_id IN (
+                SELECT id FROM description WHERE action_id = ?
+            )
+        """, [action_id])
+
+        # Delete the descriptions
+        conn.execute("""
+            DELETE FROM description WHERE action_id = ?
         """, [action_id])
 
         # Finally delete the action itself
@@ -208,7 +301,7 @@ def generate_action_labels(action: Action) -> Labels:
     input = {
         "function": action.operation.name,
         "column": action.file_column,
-        "description": action.description,
+        "description": action.descriptions[action.active_description].description,
     }
 
     output = [
@@ -219,16 +312,19 @@ def generate_action_labels(action: Action) -> Labels:
         [{"Person": "James Brown",}, {"Label": "james brown"}]
     ]
 
+    saved_action = update_action(action.id, action)
+
     with get_db() as conn:
+        # Get max version and increment by 1, or use 1 if no previous versions exist
         result = conn.execute("""
-            INSERT INTO labels (json, version, action_id)
-            VALUES (?, 
-               COALESCE((SELECT CAST(MAX(version) AS INTEGER) + 1 
-                    FROM labels 
-                    WHERE action_id = ?), 1),
-               ?)
-            RETURNING id, version
-        """, [json.dumps(output), action.id, action.id]).fetchone()
+            INSERT INTO labels (json, description_id)
+            VALUES (?, ?)
+            RETURNING id, COALESCE((SELECT MAX(version) + 1 FROM labels WHERE description_id = ?), 1) as version
+        """, [
+            json.dumps(output),
+            saved_action.descriptions[action.active_description].id,
+            saved_action.descriptions[action.active_description].id
+        ]).fetchone()
 
     return Labels(
         id=result[0],

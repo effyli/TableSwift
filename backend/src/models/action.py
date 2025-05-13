@@ -4,6 +4,7 @@ from typing import Optional, List
 from uuid import UUID
 from .operation import Operation
 from .labels import Labels
+from .description import Description
 
 class ActionBase(BaseModel):
     id: int
@@ -13,8 +14,8 @@ class ActionBase(BaseModel):
     file_column: Optional[str] = None
 
 class Action(ActionBase):
-    description: Optional[str] = None
-    labels: List[Labels]
+    active_description: int = 0
+    descriptions: list[Description] = []
 
     class Config:
         from_attributes = True

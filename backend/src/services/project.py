@@ -3,6 +3,7 @@ from uuid import uuid4, UUID
 from ..database import get_db
 from ..models.project import ProjectBase, ProjectCreate, Project
 from ..models.file import File
+from .action import delete_action
 
 
 async def create_project(project_data: ProjectCreate) -> ProjectBase:
@@ -95,16 +96,24 @@ def delete_project(project_id: UUID, user_id: UUID) -> bool:
             """, [project_id, user_id])
             if file_result.rowcount == 0:
                 raise HTTPException(status_code=404, detail="File not found")
+            
+            # Delete all actions
+            action_ids = conn.execute("""
+                SELECT id FROM actions
+                WHERE project_id = ?
+            """, [project_id]).fetchall()
+            action_ids = [action_id[0] for action_id in action_ids]
 
+            for action_id in action_ids:
+                delete_action(action_id)
 
+            # Then delete the project
             project_result = conn.execute("""
                 DELETE FROM projects
                 WHERE id = ? AND user_id = ?
             """, [project_id, user_id])
             if project_result.rowcount == 0:
                 raise HTTPException(status_code=404, detail="Project not found")
-
-            
 
             return True
 

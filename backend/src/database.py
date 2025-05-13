@@ -41,6 +41,12 @@ def init_db():
             START WITH 1
             INCREMENT BY 1;
         """)
+
+        conn.execute("""
+            CREATE SEQUENCE IF NOT EXISTS description_id_seq
+            START WITH 1
+            INCREMENT BY 1;
+        """)
         
         conn.execute("""
             CREATE SEQUENCE IF NOT EXISTS label_id_seq
@@ -111,10 +117,19 @@ def init_db():
                     DEFAULT nextval('action_id_seq'),
                 operation_id INTEGER,
                 file_column VARCHAR,
-                description VARCHAR,
                 datetime TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 project_id UUID,
                 file_id INTEGER
+            );
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS description (
+                id INTEGER PRIMARY KEY
+                    DEFAULT nextval('description_id_seq'),
+                description VARCHAR NOT NULL,
+                version INTEGER NOT NULL,
+                action_id INTEGER NOT NULL
             );
         """)
 
@@ -123,8 +138,7 @@ def init_db():
                 id INTEGER PRIMARY KEY
                     DEFAULT nextval('label_id_seq'),
                 json VARCHAR NOT NULL,
-                version INTEGER NOT NULL,
-                action_id INTEGER NOT NULL
+                description_id INTEGER NOT NULL
             );
         """)
 
