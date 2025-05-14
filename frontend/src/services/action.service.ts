@@ -3,6 +3,7 @@ import { Action, ActionBase, ActionCreate
  } from '../types/action';
 import { Labels } from '../types/labels';
 import { Code } from '../types/code';
+import { Descriptions } from '../types/description';
 
 export const actionService = {
     async createAction(action: ActionCreate): Promise<ActionBase> {
@@ -41,9 +42,9 @@ export const actionService = {
         }
     },
 
-    async generateLabels(action: Action): Promise<Labels> {
+    async generateLabels(action: Action): Promise<Descriptions> {
         try {
-            const response = await axiosInstance.post<Labels>(`/action/generate_labels`, action);
+            const response = await axiosInstance.post<Descriptions>(`/action/generate_labels`, action);
             return response.data;
         } catch (error) {
             throw new Error('Failed to generate labels');

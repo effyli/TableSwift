@@ -25,6 +25,48 @@ def create_action(action_create: ActionCreate) -> ActionBase:
             project_id=result[1],
             datetime=result[2]
         )
+    
+def delete_action(action_id: int) -> None:
+    """Delete an action and its related data by its ID."""
+    with get_db() as conn:
+        # Check if the action exists and is reverted
+        action = conn.execute("""
+            SELECT file_id FROM actions WHERE id = ?
+        """, [action_id]).fetchone()
+        
+        if not action:
+            raise ValueError("Action not found")
+        if action[0] is not None:
+            raise ValueError("Action cannot be deleted because it is not reverted yet")
+
+        # First delete codes linked to this action's labels
+        conn.execute("""
+            DELETE FROM codes 
+            WHERE label_id IN (
+                SELECT id FROM labels WHERE description_id IN (
+                    SELECT id FROM description WHERE action_id = ?
+                )
+            )
+        """, [action_id])
+
+        # Then delete the labels
+        conn.execute("""
+            DELETE FROM labels WHERE description_id IN (
+                SELECT id FROM description WHERE action_id = ?
+            )
+        """, [action_id])
+
+        # Delete the descriptions
+        conn.execute("""
+            DELETE FROM description WHERE action_id = ?
+        """, [action_id])
+
+        # Finally delete the action itself
+        conn.execute("""
+            DELETE FROM actions WHERE id = ?
+        """, [action_id])
+        return None
+    
 
 def get_action(action_id: int) -> Action:
     """Get an action by its ID."""
@@ -108,6 +150,7 @@ def get_action(action_id: int) -> Action:
             descriptions=descriptions
         )
 
+
 async def get_project_actions(project_id: UUID) -> list[ActionBase]:
     """Get all actions for a project."""
     with get_db() as conn:
@@ -160,80 +203,108 @@ def check_column_exists(action_id: int, column_name: str) -> bool:
             raise ValueError(f"Column '{column_name}' not found in file. Available columns: {', '.join(columns)}")
 
 
-def save_codes() -> None:
+def save_codes(label_id: int, codes: list[Code]) -> list[int]:
     """Save codes to the database."""
-    pass
+    return []
+
+
+def save_label(desc_id: int, label: Labels) -> None:
+    with get_db() as conn:
+        # Check if the label exists
+        existing_labels = conn.execute("""
+            SELECT id FROM labels WHERE id = ?
+        """, [label.id]).fetchone()
+
+        if not existing_labels:
+            # If it doesn't exist, create a new one
+            new_label = conn.execute("""
+                INSERT INTO labels (json, version, description_id)
+                VALUES (?, COALESCE((SELECT CAST(MAX(version) AS INTEGER) + 1 FROM labels WHERE description_id = ?), 1), ?)
+                RETURNING id, json, version
+            """, [
+                json.dumps(label.json),
+                desc_id,  # For the version subquery
+                desc_id
+            ]).fetchone()
+
+            return Labels(
+                id=new_label[0],
+                json=new_label[1],
+                version=new_label[2],
+                codes=[]
+            )
+        else:
+            # If it exists, update it
+            resultLabel = conn.execute("""
+                UPDATE labels SET 
+                    json = ?
+                WHERE id = ?
+                RETURNING id, json, version
+            """, [
+                json.dumps(label.json),
+                label.id
+            ]).fetchone()
+
+            return Labels(
+                id=resultLabel[0],
+                json=resultLabel[1],
+                version=resultLabel[2],
+                codes=save_codes(resultLabel[0], label.codes) if label.codes else []
+            )
 
 
 def save_labels(desc_id: int, labels: List[Labels]) -> None:
-    with get_db() as conn:
-        for label in labels:
-            # Check if the label exists
-            existing_labels = conn.execute("""
-                SELECT id FROM labels WHERE id = ?
-            """, [label.id]).fetchone()
+    return [save_label(desc_id, label) for label in labels if label.json]
 
-            if not existing_labels:
-                # If it doesn't exist, create a new one
-                conn.execute("""
-                    INSERT INTO labels (json, version, description_id)
-                    VALUES (?, COALESCE((SELECT CAST(MAX(version) AS INTEGER) + 1 FROM labels WHERE description_id = ?), 1), ?)
-                """, [
-                    json.dumps(label.json),
-                    desc_id,  # For the version subquery
-                    desc_id
-                ])
-            else:
-                # If it exists, update it
-                conn.execute("""
-                    UPDATE labels SET 
-                        json = ?,
-                    WHERE id = ?
-                """, [
-                    json.dumps(label.json),
-                    label.id
-                ])
-                
-                # TODO save codes
-                if label.codes:
-                    save_codes(label.id, label.codes)
+
+def save_description(action_id: int, description: Description) -> Description:
+    with get_db() as conn:
+        # Check if the description exists
+        existing_desc = conn.execute("""
+            SELECT id FROM description WHERE id = ?
+        """, [description.id]).fetchone()
+
+        if not existing_desc:
+            # If it doesn't exist, create a new one
+            result = conn.execute("""
+                INSERT INTO description (description, version, action_id)
+                VALUES (?, COALESCE((SELECT CAST(MAX(version) AS INTEGER) + 1 FROM description WHERE action_id = ?), 1), ?)
+                RETURNING id, description, version
+            """, [
+                description.description,
+                action_id,  # For the version subquery
+                action_id
+            ]).fetchone()
+            
+            new_desc = Description(
+                id=result[0],
+                description=result[1],
+                version=result[2],
+                labels=[]
+            )
+            return new_desc
+        else:
+            # If it exists, update it
+            desc = conn.execute("""
+                UPDATE description SET 
+                    description = ?
+                WHERE id = ?
+                RETURNING id, description, version
+            """, [
+                description.description,
+                description.id
+            ]).fetchone()
+
+            return Description(
+                id=desc[0],
+                description=desc[1],
+                version=desc[2],
+                labels=save_labels(description.id, description.labels) if description.labels else []
+            )
 
 
 def save_descriptions(action_id: int, descriptions: list[Description]) -> None:
-    with get_db() as conn:
-        for desc in descriptions:
-            # Check if the description exists
-            existing_desc = conn.execute("""
-                SELECT id FROM description WHERE id = ?
-            """, [desc.id]).fetchone()
-
-            if not existing_desc:
-                # If it doesn't exist, create a new one
-                conn.execute("""
-                    INSERT INTO description (description, version, action_id)
-                    VALUES (?, 
-                        COALESCE((SELECT CAST(MAX(version) AS INTEGER) + 1 
-                            FROM description 
-                            WHERE action_id = ?), 1),
-                        ?)
-                """, [
-                    desc.description,
-                    action_id,  # For the version subquery
-                    action_id
-                ])
-            else:
-                # If it exists, update it
-                conn.execute("""
-                    UPDATE description SET 
-                        description = ?,
-                    WHERE id = ?
-                """, [
-                    desc.description,
-                    desc.id
-                ])
-
-                if desc.labels:
-                    save_labels(desc.id, desc.labels)
+    return [save_description(action_id, desc) for desc in descriptions if desc.description]
 
 
 def update_action(action_id: int, action: Action) -> Action:
@@ -259,53 +330,20 @@ def update_action(action_id: int, action: Action) -> Action:
             action_id
         ])
 
-        save_descriptions(action_id, action.descriptions)
+        descriptions = save_descriptions(action_id, action.descriptions)
 
-        return get_action(action_id)
-
-def delete_action(action_id: int) -> None:
-    """Delete an action and its related data by its ID."""
-    with get_db() as conn:
-        # Check if the action exists and is reverted
-        action = conn.execute("""
-            SELECT file_id FROM actions WHERE id = ?
-        """, [action_id]).fetchone()
-        
-        if not action:
-            raise ValueError("Action not found")
-        if action[0] is not None:
-            raise ValueError("Action cannot be deleted because it is not reverted yet")
-
-        # First delete codes linked to this action's labels
-        conn.execute("""
-            DELETE FROM codes 
-            WHERE label_id IN (
-                SELECT id FROM labels WHERE description_id IN (
-                    SELECT id FROM description WHERE action_id = ?
-                )
-            )
-        """, [action_id])
-
-        # Then delete the labels
-        conn.execute("""
-            DELETE FROM labels WHERE description_id IN (
-                SELECT id FROM description WHERE action_id = ?
-            )
-        """, [action_id])
-
-        # Delete the descriptions
-        conn.execute("""
-            DELETE FROM description WHERE action_id = ?
-        """, [action_id])
-
-        # Finally delete the action itself
-        conn.execute("""
-            DELETE FROM actions WHERE id = ?
-        """, [action_id])
-        return None
+        return Action(
+            id=action_id,
+            project_id=action.project_id,
+            datetime=datetime.now(),
+            operation=action.operation,
+            file_column=action.file_column,
+            active_description=len(descriptions) - 1,
+            descriptions=descriptions
+        )
     
 
-def generate_action_labels(action: Action) -> Labels:
+def generate_action_labels(action: Action) -> Description:
     """Generate labels for an action."""
     
     # TODO Send the operation, column, and description to the TableSwift framework to generate labels
@@ -347,11 +385,16 @@ def generate_action_labels(action: Action) -> Labels:
             next_version
         ]).fetchone()
 
-    return Labels(
-        id=result[0],
-        json=json.dumps(output),
+    return Description(
+        id=saved_action.descriptions[action.active_description].id,
+        description=saved_action.descriptions[action.active_description].description,
         version=next_version,
-        codes=[]
+        labels=[Labels(
+            id=result[0],
+            json=json.dumps(output),
+            version=next_version,
+            codes=[]
+        )]
     )
 
 

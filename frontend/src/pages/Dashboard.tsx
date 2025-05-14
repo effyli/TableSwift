@@ -93,11 +93,6 @@ export const Dashboard: React.FC = () => {
         active_action: action,
         actions: updatedActions
       });
-      console.log("Updated project", {
-        ...project,
-        active_action: action,
-        actions: updatedActions
-      })
     }
   };
 

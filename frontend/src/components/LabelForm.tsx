@@ -39,11 +39,9 @@ export const LabelForm: React.FC<LabelFormProps> = ({ labels, generateCode, sele
             json: JSON.stringify(editableLabels)
         };
 
-        console.log('Saving labels:', newLabels);
 
         try {
             const savedLabelsMessage = await actionService.saveLabels(newLabels);
-            console.log('Labels saved successfully:', savedLabelsMessage);
         } catch (error) {
             console.error('Error saving labels:', error);
         } finally {

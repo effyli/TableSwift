@@ -6,6 +6,7 @@ from ..dependencies import validate_token
 from ..dependencies.csrf import validate_csrf_token
 import traceback
 from ..models.labels import Labels
+from ..models.description import Description
 
 router = APIRouter(
     prefix="/action",
@@ -77,7 +78,7 @@ async def delete_single_action(action_id: int, _: TokenData = Depends(validate_t
             detail="Failed to delete action"
         )
     
-@router.post("/generate_labels", response_model=Labels, dependencies=[Depends(validate_csrf_token)])
+@router.post("/generate_labels", response_model=Description, dependencies=[Depends(validate_csrf_token)])
 async def generate_labels(action: Action, _: TokenData = Depends(validate_token)):
     """Generate labels for the action."""
     try:

@@ -1,11 +1,11 @@
-import React, { useState, useEffect, use } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Action } from '../types/action';
 import { Operation } from '../types/operation';
 import { actionService } from '../services/action.service';
 import { ActionForm } from './ActionForm';
 import { LabelForm } from './LabelForm';
-import { formatActionJson, parseLabels } from '../util/formatAction';
+import { formatActionJson } from '../util/formatAction';
 
 interface SingleActionProps {
     projectAction: Action | null | undefined;
@@ -72,7 +72,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
 
   //   try {
   //     // Make a copy of action to avoid mutating the original object
-  //     const formattedAction = formatActionJson({ ...projectAction });
+  //     const formattedAction = formatActionJson(JSON.parse(JSON.stringify(projectAction)));
   //     const updatedAction = await actionService.updateAction(formattedAction);
   //     onActionUpdate(updatedAction);
   //   } catch (error) {
@@ -92,28 +92,22 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
 
     try { 
       // Make a copy of action to avoid mutating the original object
+      console.log('Project action before generating labels:', projectAction);
       if (description) {
         projectAction.descriptions.push({ description: description })
         projectAction.active_description = projectAction.descriptions.length - 1;
       }
-      console.log('Project action before generating labels:', projectAction);
+      console.log('Project action before generating labels 2:', projectAction);
       const formattedAction = formatActionJson(JSON.parse(JSON.stringify(projectAction)));
-      console.log('Formatted action for label generation:', formattedAction);
-      const labels = await actionService.generateLabels(formattedAction);
-      console.log('Generated labels:', labels);
+      const updatedDescription = await actionService.generateLabels(formattedAction);
         // Add the generated labels in the active description of the action
         const updatedDescriptions = [...(projectAction.descriptions || [])];
-        updatedDescriptions[projectAction.active_description] = {
-          ...updatedDescriptions[projectAction.active_description],
-          version: projectAction.descriptions?.length || 0,
-          labels: [...(updatedDescriptions[projectAction.active_description].labels || []), labels]
-        };
-        console.log('Updated descriptions:', updatedDescriptions);
+        updatedDescriptions[projectAction.active_description] = updatedDescription;
         const updatedAction = {
           ...formattedAction,
           descriptions: updatedDescriptions
         };
-        console.log('Updated action:', updatedAction);
+        console.log('Updated action after generating labels:', updatedAction);
   
         onActionUpdate(updatedAction);
 
