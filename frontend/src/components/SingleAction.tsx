@@ -20,7 +20,6 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  // const [isLoadingSaving, setIsLoadingSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -48,6 +47,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
   }, []);
 
   useEffect(() => {
+    // Remove error message after 5 seconds
     if (error) {
       setTimeout(() => {
         setError(null);
@@ -64,37 +64,21 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
   const handleActionChange = (field: keyof Action, value: any) => {
     if (!projectAction || !(field in projectAction)) return; // TODO reload page?
 
+    if (field === 'active_description') {
+      projectAction.active_labels = projectAction.descriptions[value]!.labels!.length - 1
+    }
+
     onActionUpdate({
       ...projectAction,
       [field]: value
     } as Action);
   }
 
-  // // Handle save action
-  // const handleSave = async () => {
-  //   setIsLoadingSaving(true);
-  //   if (!projectAction) {
-  //     setError('Please fill in all fields');
-  //     return;
-  //   }
-
-  //   try {
-  //     // Make a copy of action to avoid mutating the original object
-  //     const formattedAction = formatActionJson(JSON.parse(JSON.stringify(projectAction)));
-  //     const updatedAction = await actionService.updateAction(formattedAction);
-  //     onActionUpdate(updatedAction);
-  //   } catch (error) {
-  //     setError('Failed to save action');
-  //     console.error('Error saving action:', error);
-  //   } finally {
-  //     setIsLoadingSaving(false);
-  //   }
-  // };
-
   // Handle generate labels
   const generateLabels = async (description: string | undefined) => {
     setError(null);
-    if (!projectAction || !projectAction.operation?.id || !projectAction.file_column || !description) {
+    console.log('Generating labels for action:', projectAction);
+    if (!projectAction || !projectAction.operation?.id || !projectAction.file_column || (!description && projectAction.descriptions?.length === 0)) {
       setError('Please fill in all fields');
       throw new Error('Please fill in all fields');
     }
@@ -112,8 +96,10 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
         updatedDescriptions[projectAction.active_description] = updatedDescription;
         const updatedAction = {
           ...formattedAction,
+          active_labels: updatedDescription.labels ? updatedDescription.labels.length - 1 : 0,
           descriptions: updatedDescriptions
         };
+        console.log('Updated action:', updatedAction);
         onActionUpdate(updatedAction);
 
     } catch (error) {
@@ -149,15 +135,6 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
           >
             ← Back to Actions
           </button>
-          {/* {!isLoading && (
-            <button
-              onClick={handleSave}
-              disabled={isLoadingSaving || !projectAction?.operation?.id}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-            >
-              {isLoadingSaving ? 'Saving...' : 'Save Action'}
-            </button>  
-          )} */}
         </div>
 
         {error && (
@@ -189,9 +166,11 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
 
               {projectAction.descriptions?.[projectAction.active_description]?.labels && (
                 <LabelForm
-                  labels={projectAction.descriptions?.[projectAction.active_description]?.labels}
-                  generateCode={generateCode}
+                  labels={projectAction.descriptions[projectAction.active_description].labels!}
+                  activeLabels={projectAction.active_labels}
                   selectedOperation={projectAction.operation}
+                  generateCode={generateCode}
+                  onFieldChange={handleActionChange}
                 />
               )}
             </>

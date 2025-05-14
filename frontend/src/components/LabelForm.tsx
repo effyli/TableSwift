@@ -2,11 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { Labels } from '../types/labels';
 import { Operation } from '../types/operation';
 import { actionService } from '../services/action.service'
+import { MdArrowBackIos, MdArrowForwardIos } from 'react-icons/md';
+import { Action } from '../types/action';
 
 interface LabelFormProps {
-    labels: Labels[] | undefined;
-    generateCode: (labels: any) => void;
+    labels: Labels[];
+    activeLabels: number;
     selectedOperation?: Operation;
+    generateCode: (labels: any) => void;
+    onFieldChange: (field: keyof Action, value: any) => void;
 }
 
 interface LabelRow {
@@ -19,23 +23,31 @@ interface SourceDataRow extends LabelRow {
     Label: string;
 }
 
-export const LabelForm: React.FC<LabelFormProps> = ({ labels, generateCode, selectedOperation }) => {
+export const LabelForm: React.FC<LabelFormProps> = ({ labels, activeLabels, selectedOperation, generateCode, onFieldChange }) => {
     const [isLoadingGenerating, setIsLoadingGenerating] = useState(false);
     const [isSavingLabels, setIsSavingLabels] = useState(false);
     const [editableLabels, setEditableLabels] = useState<LabelPair[]>([]);
 
     useEffect(() => {
         if (labels?.[0]?.json) {
-            setEditableLabels(labels[0].json as LabelPair[]);
+            setEditableLabels(labels[activeLabels].json as LabelPair[]);
         }
     }, [labels]);
+
+    const handleSwitchLabels = (direction: 'next' | 'prev') => {
+        activeLabels = (direction == 'next') ? activeLabels + 1 : activeLabels - 1;
+        if (activeLabels < 0) activeLabels = 0;
+        if (activeLabels >= labels.length) activeLabels = labels.length - 1;
+        onFieldChange('active_labels', activeLabels);
+        setEditableLabels(labels[activeLabels].json as LabelPair[]);
+    };
 
     const handleSavingLabels = async () => {
         if (!labels?.[0]) return;
         setIsSavingLabels(true);
 
         const newLabels: Labels = {
-            ...labels[0],
+            ...labels[activeLabels],
             json: JSON.stringify(editableLabels)
         };
 
@@ -66,10 +78,6 @@ export const LabelForm: React.FC<LabelFormProps> = ({ labels, generateCode, sele
         setEditableLabels(newLabels);
     };
 
-    if (!labels?.[0]?.json?.length) {
-        return null;
-    }
-
     const isEntityMatching = selectedOperation?.id === 4;
     let table = null;
 
@@ -77,7 +85,7 @@ export const LabelForm: React.FC<LabelFormProps> = ({ labels, generateCode, sele
         // Entity Matching View - Show items as rows under each other
         table = (
             <div className="space-y-8">
-                {(labels[0].json as LabelPair[]).map((row, rowIndex) => (
+                {(labels[activeLabels].json as LabelPair[]).map((row, rowIndex) => (
                     <div key={rowIndex} className="border border-gray-700 rounded-lg overflow-hidden">
                         <table className="min-w-full divide-y divide-gray-700">
                             <thead className="bg-black-lighter">
@@ -107,11 +115,11 @@ export const LabelForm: React.FC<LabelFormProps> = ({ labels, generateCode, sele
         );
     } else {
         // Regular View - Single table with sticky label column
-        const sourceData: SourceDataRow[] = (labels[0].json as LabelPair[]).map(row => ({
+        const sourceData: SourceDataRow[] = (labels[activeLabels].json as LabelPair[]).map(row => ({
             ...row[0],
             Label: row[1].Label
         }));
-        const headers = [...Object.keys(labels[0].json[0][0]), 'Label'];
+        const headers = [...Object.keys(labels[activeLabels].json[0][0]), 'Label'];
     
         table = (                
             <div className="border border-gray-700 rounded-lg overflow-hidden">
@@ -171,21 +179,36 @@ export const LabelForm: React.FC<LabelFormProps> = ({ labels, generateCode, sele
                 
                 {table}
     
-                <div className="mt-4 flex gap-x-4">
-                    <button
-                        onClick={() => handleSavingLabels()}
-                        disabled={isSavingLabels}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-                    >
-                        {isSavingLabels ? 'Saving...' : 'Save labels'}
-                    </button>
-                    <button
-                        onClick={() => handleGenerateCode()}
-                        disabled={isLoadingGenerating}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-                    >
-                        {isLoadingGenerating ? 'Generating...' : 'Generate Code'}
-                    </button>
+                <div className="mt-4 flex gap-x-4 justify-between items-center">
+                    <div className='flex items-center gap-x-4'>
+                        <button
+                            onClick={() => handleSavingLabels()}
+                            disabled={isSavingLabels}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                            {isSavingLabels ? 'Saving...' : 'Save labels'}
+                        </button>
+                        <button
+                            onClick={() => handleGenerateCode()}
+                            disabled={isLoadingGenerating}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                            {isLoadingGenerating ? 'Generating...' : 'Generate Code'}
+                        </button>
+                    </div>
+                    {
+                        (labels && labels.length > 1) && (
+                            <div className='flex items-center gap-2'>
+                                <button onClick={() => handleSwitchLabels('prev')} disabled={activeLabels === 0}>
+                                    <MdArrowBackIos />
+                                </button>
+                                <span>{activeLabels + 1}/{labels?.length}</span>
+                                <button onClick={() => handleSwitchLabels('next')} disabled={labels && activeLabels === labels.length - 1}>
+                                    <MdArrowForwardIos />
+                                </button>
+                            </div>
+                        )
+                    }
                 </div>
             </div>
     );

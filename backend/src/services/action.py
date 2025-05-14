@@ -140,6 +140,8 @@ def get_action(action_id: int) -> Action:
                 labels=labels
             ))
 
+        print(len(descriptions), descriptions[-1], len(descriptions[-1].labels))
+
         return Action(
             id=action_result[0],
             project_id=action_result[1],
@@ -147,6 +149,7 @@ def get_action(action_id: int) -> Action:
             operation=Operation(id=action_result[3], name=action_result[4]) if action_result[3] else None,
             file_column=action_result[5],
             active_description=len(descriptions) - 1,
+            active_labels=len(descriptions[-1].labels) - 1 if descriptions else 0,
             descriptions=descriptions
         )
 
@@ -339,6 +342,7 @@ def update_action(action_id: int, action: Action) -> Action:
             operation=action.operation,
             file_column=action.file_column,
             active_description=len(descriptions) - 1,
+            active_labels=len(descriptions[-1].labels) - 1 if descriptions else 0,
             descriptions=descriptions
         )
     
@@ -371,7 +375,6 @@ def generate_action_labels(action: Action) -> Description:
             FROM labels
             WHERE description_id = ?
         """, [saved_action.descriptions[action.active_description].id]).fetchone()
-        
         next_version = version_result[0]
 
         # Then do the insert
@@ -389,12 +392,14 @@ def generate_action_labels(action: Action) -> Description:
         id=saved_action.descriptions[action.active_description].id,
         description=saved_action.descriptions[action.active_description].description,
         version=next_version,
-        labels=[Labels(
-            id=result[0],
-            json=json.dumps(output),
-            version=next_version,
-            codes=[]
-        )]
+        labels=saved_action.descriptions[action.active_description].labels + [
+            Labels(
+                id=result[0],
+                json=json.dumps(output),
+                version=next_version,
+                codes=[]
+            )
+        ]
     )
 
 

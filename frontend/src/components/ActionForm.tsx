@@ -3,6 +3,7 @@ import { Operation } from '../types/operation';
 import { Action } from '../types/action';
 import { FaRegEdit } from "react-icons/fa";
 import { MdArrowBackIos, MdArrowForwardIos } from "react-icons/md";
+import { IoReload } from "react-icons/io5";
 import { Descriptions } from '../types/description';
 
 interface ActionFormProps {
@@ -61,6 +62,13 @@ export const ActionForm: React.FC<ActionFormProps> = ({
         setAdjustedDescription(e.target.value);
     };
 
+    const handleSwitchDescription = (direction: 'next' | 'prev') => {
+        let newActiveDescription = (direction === 'next') ? activeDescription + 1 : activeDescription - 1;
+        if (newActiveDescription < 0) newActiveDescription = 0;
+        if (newActiveDescription >= (descriptions ? descriptions.length : 0)) newActiveDescription = (descriptions ? descriptions.length - 1 : 0);
+        onFieldChange('active_description', newActiveDescription);
+    }
+
     const handleGenerateLabels = async () => {
         setIsLoadingGenerating(true);
         setDescriptionDisabled(true);
@@ -70,6 +78,18 @@ export const ActionForm: React.FC<ActionFormProps> = ({
         catch (err) {
             console.error('Error generating labels:', err);
             setDescriptionDisabled(false);
+        } finally {
+            setIsLoadingGenerating(false);
+        }
+    };
+
+    const handleRegenerateLabels = async () => {
+        setIsLoadingGenerating(true);
+        try {
+            await generateLabels(undefined);
+        }
+        catch (err) {
+            console.error('Error generating labels:', err);
         } finally {
             setIsLoadingGenerating(false);
         }
@@ -137,18 +157,27 @@ export const ActionForm: React.FC<ActionFormProps> = ({
             <div className='mt-1'>
                 {descriptionDisabled ? (
                     <div className='flex justify-between items-center'>
-                        <button className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg' onClick={() => openDescriptionEditor()}>
-                            <FaRegEdit />
-                        </button>
-                        <div className='flex items-center gap-2'>
-                            <button onClick={() => onFieldChange('active_description', activeDescription - 1)} disabled={activeDescription === 0}>
-                                <MdArrowBackIos />
+                        <div className='flex items-center gap-1'>
+                            <button className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg' onClick={() => openDescriptionEditor()}>
+                                <FaRegEdit />
                             </button>
-                            <span>{activeDescription + 1}/{descriptions?.length}</span>
-                            <button onClick={() => onFieldChange('active_description', activeDescription + 1)} disabled={descriptions && activeDescription === descriptions.length - 1}>
-                                <MdArrowForwardIos />
+                            <button className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg' onClick={() => handleRegenerateLabels()}>
+                                <IoReload />
                             </button>
                         </div>
+                        {
+                            (descriptions && descriptions.length > 1) && (
+                                <div className='flex items-center gap-2'>
+                                    <button onClick={() => handleSwitchDescription('prev')} disabled={activeDescription === 0}>
+                                        <MdArrowBackIos />
+                                    </button>
+                                    <span>{activeDescription + 1}/{descriptions?.length}</span>
+                                    <button onClick={() => handleSwitchDescription('next')} disabled={descriptions && activeDescription === descriptions.length - 1}>
+                                        <MdArrowForwardIos />
+                                    </button>
+                                </div>
+                            )
+                        }
                     </div>
                 ) : (
                     <div className='flex items-center gap-x-2'>
