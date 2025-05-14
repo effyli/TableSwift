@@ -14,7 +14,6 @@ interface ActionFormProps {
     fileColumns: string[];
     onFieldChange: (field: keyof Action, value: any) => void;
     generateLabels: (description: string | undefined) => void;
-    error: string | null;
 }
 
 export const ActionForm: React.FC<ActionFormProps> = ({
@@ -26,17 +25,21 @@ export const ActionForm: React.FC<ActionFormProps> = ({
     fileColumns,
     onFieldChange,
     generateLabels,
-    error,
 }) => {
     const [isLoadingGenerating, setIsLoadingGenerating] = useState(false);
     const [descriptionDisabled, setDescriptionDisabled] = useState(true);
     const [adjustedDescription, setAdjustedDescription] = useState<string | undefined>(undefined);
+    const [hasDescriptions, setHasDescriptions] = useState(descriptions && descriptions.length > 0);
 
     const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
     useEffect(() => {
+        // Enable description editor if there are no descriptions
         if (descriptions && descriptions.length <= 0) {
             setDescriptionDisabled(false);
+        }
+        if (descriptions && descriptions.length > 0) {
+            setHasDescriptions(true)
         }
     }, [descriptions]);
 
@@ -58,14 +61,15 @@ export const ActionForm: React.FC<ActionFormProps> = ({
         setAdjustedDescription(e.target.value);
     };
 
-    const handleGenerateLabels = () => {
+    const handleGenerateLabels = async () => {
         setIsLoadingGenerating(true);
         setDescriptionDisabled(true);
         try {
-            generateLabels(adjustedDescription);
+            await generateLabels(adjustedDescription);
         }
         catch (err) {
             console.error('Error generating labels:', err);
+            setDescriptionDisabled(false);
         } finally {
             setIsLoadingGenerating(false);
         }
@@ -73,21 +77,15 @@ export const ActionForm: React.FC<ActionFormProps> = ({
 
     return (
         <div>
-            {error && (
-                <div className="bg-red-900/50 border border-red-500 text-red-500 px-4 py-2 rounded mb-4">
-                    {error}
-                </div>
-            )}
-
             <div className='grid grid-cols-2 gap-4 mb-4'>
                 <div>
                     <label className="block text-sm font-medium text-gray-400 mb-1">
                         Operation
                     </label>
                     <select
-                        className={`w-full ${descriptions && descriptions.length > 0 && descriptions[0].id !== undefined ? 'bg-black-light border border-black-light' : 'bg-black-lighter border border-black-lighter'} rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500`}
+                        className={`w-full ${hasDescriptions && descriptions![0].id !== undefined ? 'bg-black-light border border-black-light' : 'bg-black-lighter border border-black-lighter'} rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500`}
                         value={selectedOperation || ''}
-                        disabled={descriptions && descriptions.length > 0 && descriptions[0].id !== undefined}
+                        disabled={hasDescriptions && descriptions![0].id !== undefined}
                         onChange={(e) => {
                             const selectedOp = operations.find(op => op.id === parseInt(e.target.value));
                             onFieldChange('operation', e.target.value ? { id: parseInt(e.target.value), name: selectedOp?.name || '' } : null);
@@ -107,9 +105,9 @@ export const ActionForm: React.FC<ActionFormProps> = ({
                         Column
                     </label>
                     <select
-                        className={`w-full ${descriptions && descriptions.length > 0 && descriptions[0].id !== undefined ? 'bg-black-light border border-black-light' : 'bg-black-lighter border border-black-lighter'} rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500`}
+                        className={`w-full ${hasDescriptions && descriptions![0].id !== undefined ? 'bg-black-light border border-black-light' : 'bg-black-lighter border border-black-lighter'} rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500`}
                         value={fileColumn || ''}
-                        disabled={descriptions && descriptions.length > 0 && descriptions[0].id !== undefined}
+                        disabled={hasDescriptions && descriptions![0].id !== undefined}
                         onChange={(e) => onFieldChange('file_column', e.target.value)}
                     >
                         <option value="">Select a column</option>
@@ -154,18 +152,22 @@ export const ActionForm: React.FC<ActionFormProps> = ({
                     </div>
                 ) : (
                     <div className='flex items-center gap-x-2'>
-                        <button
-                            onClick={() => setDescriptionDisabled(true)}
-                            className="bg-black-lighter hover:bg-black-lightest text-white px-4 py-2 rounded-lg"
-                        >
-                            Cancel
-                        </button>
+                        {
+                            (hasDescriptions) && (
+                                <button
+                                    onClick={() => setDescriptionDisabled(true)}
+                                    className="bg-black-lighter hover:bg-black-lightest text-white px-4 py-2 rounded-lg"
+                                >
+                                    Cancel
+                                </button>
+                            )
+                        }
                         <button
                             onClick={() => handleGenerateLabels()}
-                            disabled={isLoadingGenerating || !selectedOperation}
+                            disabled={isLoadingGenerating || !selectedOperation || !fileColumn || !adjustedDescription}
                             className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                         >
-                            {isLoadingGenerating ? 'Generating...' : descriptions && descriptions.length > 0 ? 'Regenerate Labels' : 'Generate Labels'}
+                            {isLoadingGenerating ? 'Generating...' : hasDescriptions ? 'Regenerate Labels' : 'Generate Labels'}
                         </button>
                     </div>
                 )}

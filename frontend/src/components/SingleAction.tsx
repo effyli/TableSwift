@@ -46,6 +46,14 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
       setIsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (error) {
+      setTimeout(() => {
+        setError(null);
+      }, 5000);
+    }
+  }, [error]);
   
   const handleBack = () => {
     if (projectId) {
@@ -85,19 +93,18 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
 
   // Handle generate labels
   const generateLabels = async (description: string | undefined) => {
-    if (!projectAction) {
+    setError(null);
+    if (!projectAction || !projectAction.operation?.id || !projectAction.file_column || !description) {
       setError('Please fill in all fields');
-      return;
+      throw new Error('Please fill in all fields');
     }
 
     try { 
       // Make a copy of action to avoid mutating the original object
-      console.log('Project action before generating labels:', projectAction);
       if (description) {
         projectAction.descriptions.push({ description: description })
         projectAction.active_description = projectAction.descriptions.length - 1;
       }
-      console.log('Project action before generating labels 2:', projectAction);
       const formattedAction = formatActionJson(JSON.parse(JSON.stringify(projectAction)));
       const updatedDescription = await actionService.generateLabels(formattedAction);
         // Add the generated labels in the active description of the action
@@ -107,13 +114,11 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
           ...formattedAction,
           descriptions: updatedDescriptions
         };
-        console.log('Updated action after generating labels:', updatedAction);
-  
         onActionUpdate(updatedAction);
 
     } catch (error) {
       setError('Failed to save action');
-      console.error('Error saving action:', error);
+      throw new Error('Failed to save action');
     }
   }
 
@@ -136,29 +141,32 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
 
   return (
     <div className="bg-black border-r border-black-lighter p-8 pb-24 pt-0 h-full flex flex-col overflow-auto custom-scrollbar">
-      <div className="bg-black sticky top-0 flex items-center justify-between py-4">
-        <button
-          onClick={handleBack}
-          className="text-indigo-500 hover:text-indigo-400 mr-4"
-        >
-          ← Back to Actions
-        </button>
-        {/* {!isLoading && (
+      <div className="bg-black sticky top-0 py-4 flex flex-col gap-y-4">
+        <div className='flex items-center justify-between'>
           <button
-            onClick={handleSave}
-            disabled={isLoadingSaving || !projectAction?.operation?.id}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+            onClick={handleBack}
+            className="text-indigo-500 hover:text-indigo-400 mr-4"
           >
-            {isLoadingSaving ? 'Saving...' : 'Save Action'}
-          </button>  
-        )} */}
+            ← Back to Actions
+          </button>
+          {/* {!isLoading && (
+            <button
+              onClick={handleSave}
+              disabled={isLoadingSaving || !projectAction?.operation?.id}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {isLoadingSaving ? 'Saving...' : 'Save Action'}
+            </button>  
+          )} */}
+        </div>
+
+        {error && (
+          <div className="bg-red-900/50 border border-red-500 text-red-500 px-4 py-2 rounded mb-4">
+            {error}
+          </div>
+        )}
       </div>
 
-      {error && (
-        <div className="bg-red-900/50 border border-red-500 text-red-500 px-4 py-2 rounded mb-4">
-          {error}
-        </div>
-      )}
 
       {isLoading ? (
         <div className="flex items-center justify-center h-full">
@@ -177,7 +185,6 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
                 fileColumns={fileColumns}
                 onFieldChange={handleActionChange}
                 generateLabels={generateLabels}
-                error={error}
               />
 
               {projectAction.descriptions?.[projectAction.active_description]?.labels && (
