@@ -157,7 +157,7 @@ export const ActionForm: React.FC<ActionFormProps> = ({
             <div className='mt-1'>
                 {descriptionDisabled ? (
                     <div className='flex justify-between items-center'>
-                        <div className='flex items-center gap-1'>
+                        <div className='flex items-center'>
                             <button className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg' onClick={() => openDescriptionEditor()}>
                                 <FaRegEdit />
                             </button>

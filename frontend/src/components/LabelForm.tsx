@@ -17,7 +17,7 @@ interface LabelRow {
     [key: string]: string;
 }
 
-type LabelPair = [LabelRow, LabelRow];
+type LabelPair = [LabelRow, LabelRow, { feedback?: 'good' | 'wrong' }];
 
 interface SourceDataRow extends LabelRow {
     Label: string;
@@ -30,9 +30,24 @@ export const LabelForm: React.FC<LabelFormProps> = ({ labels, activeLabels, sele
 
     useEffect(() => {
         if (labels?.[0]?.json) {
-            setEditableLabels(labels[activeLabels].json as LabelPair[]);
+            // Convert existing labels to new format if they don't have feedback
+            const labelsWithFeedback = (labels[activeLabels].json as any[]).map(pair => {
+                if (pair.length === 2) {
+                    return [...pair, { feedback: undefined }] as LabelPair;
+                }
+                return pair as LabelPair;
+            });
+            setEditableLabels(labelsWithFeedback);
         }
     }, [labels]);
+
+    const handleFeedback = (rowIndex: number, feedback: 'good' | 'wrong') => {
+        const newLabels = [...editableLabels];
+        newLabels[rowIndex][2] = { 
+            feedback: newLabels[rowIndex][2]?.feedback === feedback ? undefined : feedback 
+        };
+        setEditableLabels(newLabels);
+    };
 
     const handleSwitchLabels = (direction: 'next' | 'prev') => {
         activeLabels = (direction == 'next') ? activeLabels + 1 : activeLabels - 1;
@@ -53,7 +68,8 @@ export const LabelForm: React.FC<LabelFormProps> = ({ labels, activeLabels, sele
 
 
         try {
-            const savedLabelsMessage = await actionService.saveLabels(newLabels);
+            await actionService.saveLabels(newLabels);
+            // TODO success message
         } catch (error) {
             console.error('Error saving labels:', error);
         } finally {
@@ -85,7 +101,7 @@ export const LabelForm: React.FC<LabelFormProps> = ({ labels, activeLabels, sele
         // Entity Matching View - Show items as rows under each other
         table = (
             <div className="space-y-8">
-                {(labels[activeLabels].json as LabelPair[]).map((row, rowIndex) => (
+                {(editableLabels).map((row, rowIndex) => (
                     <div key={rowIndex} className="border border-gray-700 rounded-lg overflow-hidden">
                         <table className="min-w-full divide-y divide-gray-700">
                             <thead className="bg-black-lighter">
@@ -109,6 +125,28 @@ export const LabelForm: React.FC<LabelFormProps> = ({ labels, activeLabels, sele
                                 ))}
                             </tbody>
                         </table>
+                        <div className="bg-black-lighter px-4 py-3 flex justify-end gap-x-2 border-t border-gray-700">
+                            <button
+                                onClick={() => handleFeedback(rowIndex, 'good')}
+                                className={`px-4 py-2 rounded-lg transition-colors ${
+                                    row[2]?.feedback === 'good'
+                                        ? 'bg-green-600 text-white'
+                                        : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                                }`}
+                            >
+                                Good
+                            </button>
+                            <button
+                                onClick={() => handleFeedback(rowIndex, 'wrong')}
+                                className={`px-4 py-2 rounded-lg transition-colors ${
+                                    row[2]?.feedback === 'wrong'
+                                        ? 'bg-red-600 text-white'
+                                        : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                                }`}
+                            >
+                                Wrong
+                            </button>
+                        </div>
                     </div>
                 ))}
             </div>

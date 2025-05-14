@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Action } from '../types/action';
 import { Operation } from '../types/operation';
@@ -18,6 +18,7 @@ interface SingleActionProps {
 export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoadingProject, onActionUpdate, operations, fileColumns }) => {
   const { projectId, actionId } = useParams();
   const navigate = useNavigate();
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,6 +75,17 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
     } as Action);
   }
 
+  const scrollToBottom = () => {
+    if (containerRef.current) {
+      setTimeout(() => {
+        containerRef.current?.scrollTo({
+          top: containerRef.current.scrollHeight,
+          behavior: 'smooth'
+        });
+      }, 100); // Small delay to ensure content is rendered
+    }
+  };
+
   // Handle generate labels
   const generateLabels = async (description: string | undefined) => {
     setError(null);
@@ -101,6 +113,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
         };
         console.log('Updated action:', updatedAction);
         onActionUpdate(updatedAction);
+        scrollToBottom();
 
     } catch (error) {
       setError('Failed to save action');
@@ -116,9 +129,10 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
     }
 
     try {
-      // Make a copy of action to avoid mutating the original object
       const formattedAction = formatActionJson({ ...projectAction });
       const code = await actionService.generateCode(formattedAction);
+      console.log('Generated code:', code);
+      scrollToBottom();
     } catch (error) {
       setError('Failed to save action');
       console.error('Error saving action:', error);
@@ -126,7 +140,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
   };
 
   return (
-    <div className="bg-black border-r border-black-lighter p-8 pb-24 pt-0 h-full flex flex-col overflow-auto custom-scrollbar">
+    <div ref={containerRef} className="bg-black border-r border-black-lighter p-8 pb-24 pt-0 h-full flex flex-col overflow-auto custom-scrollbar">
       <div className="bg-black sticky top-0 py-4 flex flex-col gap-y-4">
         <div className='flex items-center justify-between'>
           <button

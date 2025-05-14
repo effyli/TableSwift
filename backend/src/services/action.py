@@ -140,8 +140,6 @@ def get_action(action_id: int) -> Action:
                 labels=labels
             ))
 
-        print(len(descriptions), descriptions[-1], len(descriptions[-1].labels))
-
         return Action(
             id=action_result[0],
             project_id=action_result[1],
