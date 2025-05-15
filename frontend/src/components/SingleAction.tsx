@@ -161,7 +161,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
 
   return (
     <div ref={containerRef} className="bg-black border-r border-black-lighter p-8 pb-24 pt-0 h-full flex flex-col overflow-auto custom-scrollbar">
-      <div className="bg-black sticky top-0 py-4 flex flex-col gap-y-4">
+      <div className="bg-black sticky top-0 py-4 flex flex-col gap-y-4 z-100">
         <div className='flex items-center justify-between'>
           <button
             onClick={handleBack}
