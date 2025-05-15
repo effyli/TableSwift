@@ -48,7 +48,6 @@ export const Dashboard: React.FC = () => {
     setIsLoadingProject(true);
     projectService.getProjectDetails(projectId, actionId).then((projectData) => {
       setProject(projectData);
-      console.log("Loaded project", projectData);
       setFileColumns(projectData?.file?.data?.[0] ? Object.keys(projectData.file.data[0]) : []);
     }).catch((error) => {
       console.error('Failed to load project:', error);

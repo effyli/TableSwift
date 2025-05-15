@@ -34,7 +34,6 @@ export const actionService = {
 
     async updateAction(action: Action): Promise<Action> {
         try {
-            console.log('Updating action:', action);
             const response = await axiosInstance.put<Action>(`/action/${action.id}`, action);
             return response.data;
         } catch (error) {

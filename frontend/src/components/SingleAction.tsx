@@ -29,10 +29,6 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
   }, []);
 
   useEffect(() => {
-    console.log('Project action updated:', projectAction);
-  }, [projectAction]);
-
-  useEffect(() => {
     // Load the action only when not loaded by the full project in dashboard
     if ((!projectAction && actionId && !isLoadingProject) || (projectAction && actionId && projectAction.id !== parseInt(actionId) && !isLoadingProject)) {
       setIsLoading(true);
@@ -71,7 +67,17 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
     if (!projectAction || !(field in projectAction)) return; // TODO reload page?
 
     if (field === 'active_description') {
-      projectAction.active_labels = projectAction.descriptions[value]!.labels!.length - 1
+      const newDescription = projectAction.descriptions[value];
+      // Set to the last label in the new description
+      projectAction.active_labels = newDescription?.labels?.length ? newDescription.labels.length - 1 : 0;
+      // Set to the last code in the selected label
+      projectAction.active_code = newDescription?.labels?.[projectAction.active_labels]?.codes?.length ? 
+        newDescription.labels[projectAction.active_labels].codes.length - 1 : 0;
+    }
+
+    if (field === 'active_labels') {
+      const newLabel = projectAction.descriptions[projectAction.active_description]?.labels?.[value];
+      projectAction.active_code = newLabel?.codes?.length ? newLabel.codes.length - 1 : 0;
     }
 
     onActionUpdate({
@@ -87,14 +93,13 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
           top: containerRef.current.scrollHeight,
           behavior: 'smooth'
         });
-      }, 100); // Small delay to ensure content is rendered
+      }, 150); // Small delay to ensure content is rendered
     }
   };
 
   // Handle generate labels
   const generateLabels = async (description: string | undefined) => {
     setError(null);
-    console.log('Generating labels for action:', projectAction);
     if (!projectAction || !projectAction.operation?.id || !projectAction.file_column || (!description && projectAction.descriptions?.length === 0)) {
       setError('Please fill in all fields');
       throw new Error('Please fill in all fields');
@@ -116,7 +121,6 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
           active_labels: updatedDescription.labels ? updatedDescription.labels.length - 1 : 0,
           descriptions: updatedDescriptions
         };
-        console.log('Updated action:', updatedAction);
         onActionUpdate(updatedAction);
         scrollToBottom();
 

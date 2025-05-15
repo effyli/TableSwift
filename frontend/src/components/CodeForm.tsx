@@ -41,19 +41,16 @@ export const CodeForm: React.FC<CodeFormProps> = ({ codes, activeCode, onFieldCh
 
     const handleSavingCode = async () => {
         setIsSavingCode(true)
-        console.log("Saving code:", editableCode);
         const result = await actionService.saveCode({
             ...codes[activeCode],
             code: editableCode
         });
-        console.log("Code saved:", result);
         setIsSavingCode(false);
     }
 
     const handleExecuteCode = () => {
         setIsExecutingCode(true)
         const codeToExecute = editableCode;
-        console.log("Executing code:", codeToExecute);
         setTimeout(() => {
             setIsExecutingCode(false);
         }, 3000);
