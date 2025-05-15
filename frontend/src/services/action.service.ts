@@ -68,4 +68,13 @@ export const actionService = {
             throw new Error('Failed to generate code');
         }
     },
+
+    async saveCode(code: Code): Promise<any> {
+        try {
+            const response = await axiosInstance.post<any>(`/action/save_code`, code);
+            return response.data;
+        } catch (error) {
+            throw new Error('Failed to save code');
+        }
+    }
 };

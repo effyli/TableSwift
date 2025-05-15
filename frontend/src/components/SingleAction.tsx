@@ -5,6 +5,7 @@ import { Operation } from '../types/operation';
 import { actionService } from '../services/action.service';
 import { ActionForm } from './ActionForm';
 import { LabelForm } from './LabelForm';
+import { CodeForm } from './CodeForm';
 import { formatActionJson } from '../util/formatAction';
 
 interface SingleActionProps {
@@ -22,6 +23,10 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, []);
 
   useEffect(() => {
     console.log('Project action updated:', projectAction);
@@ -129,9 +134,20 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
     }
 
     try {
-      const formattedAction = formatActionJson({ ...projectAction });
-      const code = await actionService.generateCode(formattedAction);
-      console.log('Generated code:', code);
+      const formattedAction = formatActionJson(JSON.parse(JSON.stringify(projectAction)));
+      const codeResult = await actionService.generateCode(formattedAction);
+
+      const updatedDescriptions = [...projectAction.descriptions];
+      const activeDescription = updatedDescriptions[projectAction.active_description];
+      const activeLabel = activeDescription.labels![projectAction.active_labels];
+      activeLabel.codes.push(codeResult);
+
+      onActionUpdate({
+        ...projectAction,
+        active_code: activeLabel.codes.length - 1,
+        descriptions: updatedDescriptions
+      });
+
       scrollToBottom();
     } catch (error) {
       setError('Failed to save action');
@@ -179,13 +195,23 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
               />
 
               {projectAction.descriptions?.[projectAction.active_description]?.labels && (
-                <LabelForm
-                  labels={projectAction.descriptions[projectAction.active_description].labels!}
-                  activeLabels={projectAction.active_labels}
-                  selectedOperation={projectAction.operation}
-                  generateCode={generateCode}
-                  onFieldChange={handleActionChange}
-                />
+                <>
+                  <LabelForm
+                    labels={projectAction.descriptions[projectAction.active_description].labels!}
+                    activeLabels={projectAction.active_labels}
+                    selectedOperation={projectAction.operation}
+                    generateCode={generateCode}
+                    onFieldChange={handleActionChange}
+                  />
+
+                  {projectAction.descriptions[projectAction.active_description].labels![projectAction.active_labels]!.codes!.length > 0 && (
+                    <CodeForm 
+                      codes={projectAction.descriptions[projectAction.active_description].labels![projectAction.active_labels]!.codes} 
+                      activeCode={projectAction.active_code}
+                      onFieldChange={handleActionChange}
+                    />
+                  )}
+                </>
               )}
             </>
           )}

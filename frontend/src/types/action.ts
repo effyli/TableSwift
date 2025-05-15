@@ -12,6 +12,7 @@ export interface ActionBase {
 export interface Action extends ActionBase {
     active_description: number;
     active_labels: number;
+    active_code: number;
     descriptions: Descriptions[];
 }
 
