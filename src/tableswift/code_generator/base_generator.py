@@ -8,13 +8,13 @@ from ollama import chat
 from ollama import ChatResponse
 
 from abc import ABC
-from promptsTemplate import get_prompts_set, PromptTemplate
+from ..promptsTemplate import get_prompts_set, PromptTemplate
 
 class CodeGenerator(ABC):
     """
     All functions here are programming language independent.
     """
-    def __init__(self, task: str, llm: str) -> None:
+    def __init__(self, task: str, llm: str, api_key: str) -> None:
         super().__init__()
         self.lang = None
         self.use_data_router = None
@@ -22,9 +22,10 @@ class CodeGenerator(ABC):
         # it can be ["gpt-4-turbo", "llama3.2", "qwen2.5-coder"]
         self.llm = llm
         self.prompts_set = None
+        self.api_key = api_key
 
         # pre-defined categories
-        self.openai_models = {"gpt-4": "gpt-4-turbo"}
+        self.openai_models = {"gpt-4": "gpt-4-turbo", "gpt-4o-mini": "gpt-4o-mini"}
         # openrouter models
         self.openrouter_models = {"deepseek-r1": "deepseek/deepseek-r1:free"}
         # llama3.2: llama3.2-3b-instruct, qwen2.5-coder: qwen2.5-coder-7b
@@ -73,7 +74,7 @@ class CodeGenerator(ABC):
             model_name = self.openrouter_models[self.llm]
             client = OpenAI(
                 base_url="https://openrouter.ai/api/v1",
-                api_key="your api key here",
+                api_key=self.api_key,
             )
             # Extract structured data from natural language
             response = client.chat.completions.create(
@@ -83,7 +84,7 @@ class CodeGenerator(ABC):
             print("structured output   ", structured_output)
         elif self.llm in self.openai_models:
             model_name = self.openai_models[self.llm]
-            client = instructor.from_openai(client = openai.OpenAI(api_key="your api key here"))
+            client = instructor.from_openai(client = openai.OpenAI(api_key=self.api_key),)
 
             # Extract structured data from natural language
             structured_output = client.chat.completions.create(
@@ -112,7 +113,7 @@ class CodeGenerator(ABC):
             print(f"structured output   {structured_output}")
         elif self.llm in self.together_models:
             model_name = self.together_models[self.llm]
-            client = Together(api_key="your api key here")
+            client = Together(api_key=self.api_key)
 
             response = client.chat.completions.create(
                 model=model_name,
