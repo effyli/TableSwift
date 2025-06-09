@@ -8,8 +8,8 @@ import traceback
 from pydantic import BaseModel
 
 from code_generator.base_generator import CodeGenerator
-from src.utils import function_utils
-from src.utils.formatter_utils import format_model_output_sql
+from src.tableswift.utils import function_utils
+from src.tableswift.utils.formatter_utils import format_model_output_sql
 
 logger = logging.getLogger(__name__)
 
