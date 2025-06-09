@@ -1,6 +1,6 @@
 [project]
 name = "tableswift"
-version = "0.1.0"
+version = "0.1.1"
 description = "Data wrangling framework with LLM using code generation"
 authors = [{ name = "Effy Li", email = "effylix@gmail.com" }]
 readme = "README.md"
@@ -11,3 +11,6 @@ dependencies = ["numpy", "regex", "fraction", "scikit-learn", "Levenshtein", "py
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta" 
+
+[tool.setuptools]
+package-dir = {"" = "src"}
