@@ -1,0 +1,13 @@
+[project]
+name = "tableswift"
+version = "0.1.0"
+description = "Data wrangling framework with LLM using code generation"
+authors = [{ name = "Effy Li", email = "effylix@gmail.com" }]
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.8"
+dependencies = ["numpy", "regex", "fraction", "scikit-learn", "Levenshtein", "pyproj", "beautifulsoup4", "geopy", "ummalqura", "mgrs", "pytz", "datetime", "roman", "pyspellchecker", "nltk"]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta" 
