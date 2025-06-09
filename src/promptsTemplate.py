@@ -5,7 +5,7 @@ PYTHON_PROMPTS = {
     "TASK_RETRY":[ {"role": "user", "content": f"{{error_message}}"}],
     "STRING_TRANSFORMATION": [{"role": "user", "content": """You are an expert Python user. I will give you a string transformation task. \
                          The task involves converting input strings to output strings. \
-                         Assuming all of the following python packages are installed: ["regex", "fractions", "math", "pyproj", "BeautifulSoup", "geopy", "ummalqura", "mgrs", "pytz", "datetime", "calendar", "roman"],\
+                         Assuming all of the following python packages are installed: ["regex", "fraction", "math", "pyproj", "BeautifulSoup", "geopy", "ummalqura", "mgrs", "pytz", "datetime", "calendar", "roman"],\
                           you can **import** them and please put all imports in the begining of the generated python program. You can also import other packages if the listed ones are not working, but try using listed packages first. \
                           When it comes to currency exchange, please do not use real-time currency, but figure out the exchange rate based on the examples I provide.
                          You will have to find the Python program called "string_transformation" that will generate the output string given the input string. \
