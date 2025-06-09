@@ -7,7 +7,7 @@ import multiprocessing
 import traceback
 from pydantic import BaseModel
 
-from code_generator.base_generator import CodeGenerator
+from .base_generator import CodeGenerator
 from src.tableswift.utils import function_utils
 from src.tableswift.utils.formatter_utils import format_model_output_sql
 
@@ -41,8 +41,8 @@ class TimeoutException(Exception):
     pass
 
 class SQLGenerator(CodeGenerator):
-    def __init__(self, task: str, llm: str, use_data_router: bool) -> None:
-        super().__init__(task, llm)
+    def __init__(self, task: str, llm: str, use_data_router: bool, api_key: str) -> None:
+        super().__init__(task, llm, api_key)
         self.lang = "sql"
         self.use_data_router = use_data_router
     

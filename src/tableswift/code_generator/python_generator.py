@@ -7,7 +7,7 @@ sys.path.insert(0, '')
 
 from src.tableswift.utils import function_utils
 from src.tableswift.utils.formatter_utils import format_model_output_python
-from code_generator.base_generator import CodeGenerator
+from .base_generator import CodeGenerator
 from pydantic import BaseModel, Field
 
 print(function_utils)
@@ -24,8 +24,8 @@ class PythonResponse_DataRouter(BaseModel):
     validate_code: str
 
 class PythonGenerator(CodeGenerator):
-    def __init__(self, task: str, llm: str, use_data_router:bool) -> None:
-        super().__init__(task, llm)
+    def __init__(self, task: str, llm: str, use_data_router:bool, api_key:str) -> None:
+        super().__init__(task, llm, api_key)
         self.lang = "python"
         self.use_data_router = use_data_router
 
