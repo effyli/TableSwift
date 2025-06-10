@@ -1,20 +1,67 @@
-Following work by [Narayan et al.](https://arxiv.org/abs/2205.09911), we use the same set of benchmark [datasets](https://github.com/HazyResearch/fm_data_tasks).
-You can clone the repo and download the data by using:
+TableSwift is a python package that can do different types of data wrangling, using LLMs with code generation.
 
+This package currently supports three functions. 
+To start using the package, first configurre with your API key. 
 ```
-git clone git@github.com:effyli/efficient_llm_data_wrangling.git
-mkdir data/
-wget https://fm-data-tasks.s3.us-west-1.amazonaws.com/datasets.tar.gz -P data
-tar xvf data/datasets.tar.gz -C data/
+ts.configure(api_key="your API key here.")
+```
+Or alternatively define yoru API key in the system environment using variable name TABLESWIFT_API_KEY.
+
+
+
+To generate labels, use:
+```
+labeled_data = ts.generate_labels(instruction="label the input samples", 
+                                      task="data_transformation",
+                                      column_name="name",
+                                      demonstrations=[{"Input": "sample1", "Output": "label1"},
+                                                     {"Input": "sample2", "Output": "label2"}],
+                                      samples_to_label=[{"Input": "sample1", "Output": ""},
+                                                        {"Input": "sample2", "Output": ""},
+                                                        {"Input": "sample3", "Output": ""}])
 ```
 
-To run the script, first setup the data_dir environmental variable by using:
+To generate code, use:
+```
+code, router_code = ts.generate_code(instruction="Transform input into output",
+                     task="data_transformation",
+                     samples=[{"Input": "sample1", "Output": "label1"},
+                              {"Input": "sample2", "Output": "label2"}],
+                     lang="python")
+```
 
+There are also hyperparameters that can be overriden, to do so, use:
 ```
-export DATASET_PATH="$PWD/data/datasets"
+code, router_code = ts.generate_code(instruction="Transform input into output",
+                     task="data_transformation",
+                     samples=[{"Input": "sample1", "Output": "label1"},
+                              {"Input": "sample2", "Output": "label2"}],
+                     lang="python",
+                     num_trials=1,
+                     num_retry=3,
+                     num_iterations=1)
 ```
 
-To start running jobs (e.g. for bing-query-logs-unit without data router and generate python code), try:
+A list of hyperparameters with their defaul value is:
 ```
-python src/run_wrangler.py --data_dir %your_data_directory/data_transformation/benchmark-bing-query-logs-unit%  --num_trials 3  --seed 42 --k 3 --d 0 --num_iter 5 --llm llama3.2 --lang python
+DEFAULT_PARAMS = {
+    "use_data_router": True,
+    "num_trials": 2,
+    "num_retry": 3,
+    "seed": 42,
+    "num_iterations": 2,
+    "max_num_solutions": 3,
+    "limit_fallback": 20, # number of invalid data samples before fallback, should be a percentage in the future
+    "llm": "gpt-4o-mini" 
+}
 ```
+
+Current package supports two languages: python and duckdb SQL. To generate python code use `lang=python`, and to generate duckdb SQL query, use `lang=sql`.
+Current pakcage supports the following tasks, remember to match the task parameter with the following string.
+```
+"data_transformation"
+"entity_matching"
+"error_detection_spelling"
+"value_imputation"
+```
+

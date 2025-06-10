@@ -6,7 +6,7 @@ from .logic.labeling import label_data_logic
 
 
 @with_api_key
-def generate_labels(instruction: str, task: str, samples_to_label: List, api_key=None, demonstrations: List[dict]=None, **overrides) -> None:
+def generate_labels(instruction: str, task: str, samples_to_label: List, column_name: str, api_key=None, demonstrations: List[dict]=None, **overrides) -> None:
     """
     Generate labels given instructions and input samples.
     """
@@ -14,6 +14,7 @@ def generate_labels(instruction: str, task: str, samples_to_label: List, api_key
     hyperparams = resolve_hyperparams(overrides)
     return label_data_logic(
         instruction=instruction,
+        column_name=column_name,
         task=task,
         demonstrations=demonstrations,
         samples_to_label=samples_to_label,

@@ -5,8 +5,8 @@ import logging
 import multiprocessing
 sys.path.insert(0, '')
 
-from src.tableswift.utils import function_utils
-from src.tableswift.utils.formatter_utils import format_model_output_python
+from ..utils import function_utils
+from ..utils.formatter_utils import format_model_output_python
 from .base_generator import CodeGenerator
 from pydantic import BaseModel, Field
 

@@ -5,7 +5,7 @@ import logging
 import instructor
 
 from pydantic import BaseModel
-from src.tableswift.utils import function_utils
+from ..utils import function_utils
 
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ class LLMPRResponse(BaseModel):
 
 prefix_instr_dt = [{"role": "system", "content": "You are helpful assistant. Given the following input/output examples, figure out the transformation and generate the output when given input."}]
 prefix_instr_em = [{"role": "system", "content": "You are helpful assistant. Given the following entities, figure out if entity A is the same with entity B. Yes or No?"}]
-demonstration_instr = [{"role": "user", "content": f"""Instructions: {{instruction}}, Examples: {{examples}}"""}]
+demonstration_instr = [{"role": "user", "content": f"""Instructions: {{instruction}}, Examples: {{examples}}, Input column name: {{column_name}}."""}]
 
 
 class LLMPR:
@@ -24,7 +24,7 @@ class LLMPR:
         self.task = task
         self.api_key = api_key
 
-    def formulate_prompt(self, instruction, examples):
+    def formulate_prompt(self, instruction, examples, column_name=None):
         # print(f"Current demonstration template is ", demonstration_instr)
         prefix = []
         if self.task == "data transformation":
@@ -35,7 +35,7 @@ class LLMPR:
         messages = prefix + demonstration
         for message in messages:
             if 'user' in message['role']:
-                message['content'] = message['content'].format(instruction=instruction, examples=examples) 
+                message['content'] = message['content'].format(instruction=instruction, examples=examples, column_name=column_name) 
         return messages
 
     def call_llm(self, message_row):
@@ -95,16 +95,16 @@ class LLMPR:
         gts, preds = self.evaluate(messages, test_data)
         return gts, preds
     
-    def pipeline_no_eval(self, instruction, examples, test_data):
+    def pipeline_no_eval(self, instruction, column_name, examples, test_data):
         """
         Inference piopeline without evaluation.
         """
-        logger.info(f"Running fallback solution on {len(test_data)} invalid rows")
+        print("LLMPR pipeline without evaluation")
         if examples:
             examples=function_utils.dicts_to_string(examples)
         else:
             examples = ""
-        messages = self.formulate_prompt(instruction, examples)
+        messages = self.formulate_prompt(instruction, examples, column_name)
         transformed_data = self.execute(messages, test_data)
         return transformed_data
 
