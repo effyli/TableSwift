@@ -5,10 +5,25 @@ from ..models.action import ActionBase, Action, ActionCreate
 from ..models.operation import Operation
 from ..models.labels import Labels
 from ..models.description import Description
+from .tableswift_data import get_file_data_tableswift, format_data_tableswift
 from ..database import get_db
 from uuid import UUID
 import pandas as pd
 import json
+import tableswift as ts
+from tableswift import generate_labels
+from ..config import get_settings
+
+
+settings = get_settings()
+
+# TODO store the operations correctly
+OPERATIONS = [
+    "data_transformation",
+    "error_detection_spelling",
+    "data_imputation",
+    "entity_matching"
+]
 
 
 def create_action(action_create: ActionCreate) -> ActionBase:
@@ -390,25 +405,27 @@ def update_action(action_id: int, action: Action) -> Action:
         )
     
 
-def generate_action_labels(action: Action) -> Description:
+async def generate_action_labels(action: Action, user_id: UUID) -> Description:
     """Generate labels for an action."""
-    
-    # TODO Send the operation, column, and description to the TableSwift framework to generate labels
-    # This is a placeholder for the actual implementation
+
+    # Only provide column if operation is not Entity Matching
+    data_ts = await get_file_data_tableswift(action.project_id, user_id, action.file_column if action.operation.id != 4 else None)
+
     input = {
-        "function": action.operation.name,
+        "function": OPERATIONS[action.operation.id],
         "column": action.file_column,
         "description": action.descriptions[action.active_description].description,
+        "data": data_ts
     }
 
-    # TODO make call to the TableSwift framework to generate code
+    # Call the TableSwift framework to generate labels
+    ts.configure(api_key=settings.LLM_API_KEY)
+    labeled_data = ts.generate_labels(instruction=input["description"], task=input["function"], demonstrations=[], samples_to_label=input["data"])
+
     output = [
-        [{"Person": "John Doe", "Age": 30, "Location": "New York", "Income": 50000, "Married": "Yes", "Kids": 3, "Hobbies": "Football", "Favorite Dish": "Dönner"}, {"Label": "john doe"}],
-        [{"Person": "Jane Smith", "Age": 25, "Location": "Los Angeles", "Income": 60000, "Married": "No", "Kids": 0, "Hobbies": "Reading", "Favorite Dish": "Pasta"}, {"Label": "jane smith"}],
-        [{"Person": "Bob Johnson", "Age": 40, "Location": "Chicago", "Income": 70000, "Married": "Yes", "Kids": 2, "Hobbies": "Golf", "Favorite Dish": "Steak"}, {"Label": "bob johnson"}],
-        [{"Person": "Mary Williams", "Age": 35, "Location": "Houston", "Income": 80000, "Married": "No", "Kids": 1, "Hobbies": "Cooking", "Favorite Dish": "Tacos"}, {"Label": "mary williams"}],
-        [{"Person": "James Brown", "Age": 50, "Location": "Phoenix", "Income": 90000, "Married": "Yes", "Kids": 4, "Hobbies": "Traveling", "Favorite Dish": "Sushi"}, {"Label": "james brown"}]
+        [{action.file_column: label["Input"]}, {"Label": label["Output"]}] for label in labeled_data
     ]
+    print("Generated labels:", output)
 
     saved_action = update_action(action.id, action)
 
@@ -446,7 +463,13 @@ def generate_action_labels(action: Action) -> Description:
         ]
     )
 
-
+    # output = [
+    #     [{"Person": "John Doe", "Age": 30, "Location": "New York", "Income": 50000, "Married": "Yes", "Kids": 3, "Hobbies": "Football", "Favorite Dish": "Dönner"}, {"Label": "john doe"}],
+    #     [{"Person": "Jane Smith", "Age": 25, "Location": "Los Angeles", "Income": 60000, "Married": "No", "Kids": 0, "Hobbies": "Reading", "Favorite Dish": "Pasta"}, {"Label": "jane smith"}],
+    #     [{"Person": "Bob Johnson", "Age": 40, "Location": "Chicago", "Income": 70000, "Married": "Yes", "Kids": 2, "Hobbies": "Golf", "Favorite Dish": "Steak"}, {"Label": "bob johnson"}],
+    #     [{"Person": "Mary Williams", "Age": 35, "Location": "Houston", "Income": 80000, "Married": "No", "Kids": 1, "Hobbies": "Cooking", "Favorite Dish": "Tacos"}, {"Label": "mary williams"}],
+    #     [{"Person": "James Brown", "Age": 50, "Location": "Phoenix", "Income": 90000, "Married": "Yes", "Kids": 4, "Hobbies": "Traveling", "Favorite Dish": "Sushi"}, {"Label": "james brown"}]
+    # ]
     # output = [
     #     [
     #         {
@@ -536,17 +559,34 @@ def update_labels(labels: Labels) -> None:
 
 def generate_action_code(action: Action) -> None:
     """Generate code for an action."""
+    # # Get the labels data - it's already a Python object, no need to parse JSON
+    # labels_data = action.descriptions[action.active_description].labels[action.active_labels].json
+    # print("Labels data:", labels_data)
+
+
     input = {
-        "function": action.operation.name,
+        "function": OPERATIONS[action.operation.id],
         "column": action.file_column,
         "description": action.descriptions[action.active_description].description,
-        "labels": action.descriptions[action.active_description].labels[action.active_labels].json,
+        "labels": format_data_tableswift(action.descriptions[action.active_description].labels[action.active_labels].json, action.file_column),
     }
+    print("Input for code generation:", input)
 
-    saved_action = update_action(action.id, action)
+    # Call the TableSwift framework to generate code
+    ts.configure(api_key=settings.LLM_API_KEY)
+    # TODO store the router code
+    code, router_code = ts.generate_code(instruction=input["description"],
+                    task=input["function"],
+                    samples=input["labels"],
+                    lang="python",
+                    num_trials=1,
+                    num_retry=1,
+                    num_iterations=1)
+    
+    print("Generated code:", code)
+    print("Generated router code:", router_code)
 
-    # TODO make call to the TableSwift framework to generate code
-    output = """
+    code = """
         def test_function():
             # This is a test function
             pass
@@ -559,6 +599,8 @@ def generate_action_code(action: Action) -> None:
             # This is yet another test function
             pass
     """
+
+    saved_action = update_action(action.id, action)
 
     with get_db() as conn:
         # First get the next version number
@@ -575,14 +617,14 @@ def generate_action_code(action: Action) -> None:
             VALUES (?, ?, ?)
             RETURNING id
         """, [
-            output,
+            code,
             saved_action.descriptions[action.active_description].labels[action.active_labels].id,
             next_version
         ]).fetchone()
 
     return Code(
         id=result[0],
-        code=output,
+        code=code,
         version=next_version
     )
 

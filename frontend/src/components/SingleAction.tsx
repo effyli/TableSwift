@@ -81,6 +81,11 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
       projectAction.active_code = newLabel?.codes?.length ? newLabel.codes.length - 1 : 0;
     }
 
+    console.log({
+      ...projectAction,
+      [field]: value
+    })
+
     onActionUpdate({
       ...projectAction,
       [field]: value

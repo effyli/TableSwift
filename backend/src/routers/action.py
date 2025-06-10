@@ -80,11 +80,11 @@ async def delete_single_action(action_id: int, _: TokenData = Depends(validate_t
         )
     
 @router.post("/generate_labels", response_model=Description, dependencies=[Depends(validate_csrf_token)])
-async def generate_labels(action: Action, _: TokenData = Depends(validate_token)):
+async def generate_labels(action: Action, token_data: TokenData = Depends(validate_token)):
     """Generate labels for the action."""
     try:
         # Assuming you have a function to generate labels
-        return generate_action_labels(action)
+        return await generate_action_labels(action, token_data.user_id)
     except Exception as e:
         print(f"Error in generate_labels: {str(e)}")
         print(traceback.format_exc())

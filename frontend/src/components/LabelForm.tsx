@@ -30,6 +30,7 @@ export const LabelForm: React.FC<LabelFormProps> = ({ labels, activeLabels, sele
     const [editableLabels, setEditableLabels] = useState<LabelPair[]>([]);
 
     useEffect(() => {
+        console.log('Labels changed:', labels);
         if (labels?.[0]?.json) {
             // Convert existing labels to new format if they don't have feedback
             const labelsWithFeedback = (labels[activeLabels].json as any[]).map(pair => {
@@ -51,6 +52,7 @@ export const LabelForm: React.FC<LabelFormProps> = ({ labels, activeLabels, sele
     };
 
     const handleSwitchLabels = (direction: 'next' | 'prev') => {
+        console.log("Switching labels: ", labels, editableLabels)
         activeLabels = (direction == 'next') ? activeLabels + 1 : activeLabels - 1;
         if (activeLabels < 0) activeLabels = 0;
         if (activeLabels >= labels.length) activeLabels = labels.length - 1;
@@ -90,8 +92,10 @@ export const LabelForm: React.FC<LabelFormProps> = ({ labels, activeLabels, sele
     };
 
     const handleLabelChange = (rowIndex: number, value: string) => {
+        console.log("Changing labels: ", labels, editableLabels, rowIndex, value);
         const newLabels = [...editableLabels];
         newLabels[rowIndex][1].Label = value;
+        console.log("New labels: ", newLabels, labels, editableLabels, rowIndex, value);
         setEditableLabels(newLabels);
     };
 
