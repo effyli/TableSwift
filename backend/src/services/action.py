@@ -586,20 +586,6 @@ def generate_action_code(action: Action) -> None:
     print("Generated code:", code)
     print("Generated router code:", router_code)
 
-    code = """
-        def test_function():
-            # This is a test function
-            pass
-            
-        def another_function():
-            # This is another test function
-            pass
-            
-        def yet_another_function():
-            # This is yet another test function
-            pass
-    """
-
     saved_action = update_action(action.id, action)
 
     with get_db() as conn:
