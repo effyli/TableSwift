@@ -23,6 +23,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAffectedRows, setShowAffectedRows] = useState<boolean>(false);
 
   useEffect(() => {
     scrollToBottom();
@@ -169,6 +170,16 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
           >
             ← Back to Actions
           </button>
+
+          <div className='justify-self-end'>
+            <button
+              onClick={() => setShowAffectedRows(!showAffectedRows)}
+              className="min-w-[100px] px-4 py-2 bg-indigo-600 text-white rounded-lg
+                  transition-colors flex items-center justify-center gap-2 hover:bg-indigo-700"
+            >
+              {showAffectedRows ? 'Show Action' : 'Show Affected Rows'}
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -185,40 +196,44 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
         </div>
       ) : (
         <>
-          {projectAction && (
+          {projectAction && (showAffectedRows ? (
+            <>
+              <h1>Affected rows</h1>
+            </>
+          ) : (
             <>
               <ActionForm
-                selectedOperation={projectAction.operation?.id || undefined}
-                fileColumn={projectAction.file_column}
-                descriptions={projectAction.descriptions}
-                activeDescription={projectAction.active_description}
+                selectedOperation={projectAction?.operation?.id}
+                fileColumn={projectAction?.file_column}
+                descriptions={projectAction?.descriptions || []}
+                activeDescription={projectAction?.active_description || 0}
                 operations={operations}
                 fileColumns={fileColumns}
                 onFieldChange={handleActionChange}
                 generateLabels={generateLabels}
               />
 
-              {projectAction.descriptions?.[projectAction.active_description]?.labels && (
+              {projectAction?.descriptions?.[projectAction.active_description]?.labels && (
                 <>
                   <LabelForm
-                    labels={projectAction.descriptions[projectAction.active_description].labels!}
-                    activeLabels={projectAction.active_labels}
-                    selectedOperation={projectAction.operation}
+                    labels={projectAction?.descriptions[projectAction.active_description]?.labels || []}
+                    activeLabels={projectAction?.active_labels || 0}
+                    selectedOperation={projectAction?.operation}
                     generateCode={generateCode}
                     onFieldChange={handleActionChange}
                   />
 
                   {projectAction.descriptions[projectAction.active_description].labels![projectAction.active_labels]!.codes!.length > 0 && (
                     <CodeForm 
-                      codes={projectAction.descriptions[projectAction.active_description].labels![projectAction.active_labels]!.codes} 
-                      activeCode={projectAction.active_code}
+                      codes={projectAction?.descriptions[projectAction.active_description]?.labels?.[projectAction.active_labels]?.codes || []} 
+                      activeCode={projectAction?.active_code || 0}
                       onFieldChange={handleActionChange}
                     />
                   )}
                 </>
               )}
             </>
-          )}
+          ))}
         </>
       )}
     </div>

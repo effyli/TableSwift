@@ -1,12 +1,13 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from ..models.action import Action, ActionCreate, ActionBase
 from ..models.user import TokenData
-from ..services.action import create_action, get_action, update_action, delete_action, generate_action_labels, update_labels
+from ..services.action import create_action, get_action, update_action, delete_action, generate_action_labels, update_labels, generate_action_code, update_code
 from ..dependencies import validate_token
 from ..dependencies.csrf import validate_csrf_token
 import traceback
 from ..models.labels import Labels
 from ..models.description import Description
+from ..models.code import Code
 
 router = APIRouter(
     prefix="/action",
@@ -105,4 +106,34 @@ async def save_labels(labels: Labels, _: TokenData = Depends(validate_token)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to save labels"
+        )
+
+
+@router.post("/generate_code", response_model=Code, dependencies=[Depends(validate_csrf_token)])
+async def generate_labels(action: Action, _: TokenData = Depends(validate_token)):
+    """Generate labels for the action."""
+    try:
+        return generate_action_code(action)
+    except Exception as e:
+        print(f"Error in generate_labels: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate labels"
+        )
+    
+
+@router.post("/save_code", dependencies=[Depends(validate_csrf_token)])
+async def save_code(code: Code, _: TokenData = Depends(validate_token)):
+    """Save code for the action."""
+    try:
+        # Assuming you have a function to save labels
+        update_code(code)
+        return {"message": "Code saved successfully"}
+    except Exception as e:
+        print(f"Error in save_code: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to save code"
         )

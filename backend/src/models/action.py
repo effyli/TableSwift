@@ -16,6 +16,7 @@ class ActionBase(BaseModel):
 class Action(ActionBase):
     active_description: int = 0
     active_labels: int = 0
+    active_code: int = 0
     descriptions: list[Description] = []
 
     class Config:

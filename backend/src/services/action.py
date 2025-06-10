@@ -148,6 +148,7 @@ def get_action(action_id: int) -> Action:
             file_column=action_result[5],
             active_description=len(descriptions) - 1,
             active_labels=len(descriptions[-1].labels) - 1 if descriptions else 0,
+            active_code=len(descriptions[-1].labels[-1].codes) - 1 if descriptions and descriptions[-1].labels else 0,
             descriptions=descriptions
         )
 
@@ -204,9 +205,53 @@ def check_column_exists(action_id: int, column_name: str) -> bool:
             raise ValueError(f"Column '{column_name}' not found in file. Available columns: {', '.join(columns)}")
 
 
+def save_code(label_id: int, code: Code) -> Code:
+    """Save a code to the database."""
+    with get_db() as conn:
+        # Check if the code exists
+        existing_code = conn.execute("""
+            SELECT id FROM codes WHERE id = ?
+        """, [code.id]).fetchone()
+
+        if not existing_code:
+            # If it doesn't exist, create a new one
+            new_code = conn.execute("""
+                INSERT INTO codes (code, label_id, version)
+                VALUES (?, ?, COALESCE((SELECT CAST(MAX(version) AS INTEGER) + 1 FROM codes WHERE label_id = ?), 1))
+                RETURNING id, code, version
+            """, [
+                code.code,
+                label_id,
+                label_id  # For the version subquery
+            ]).fetchone()
+
+            return Code(
+                id=new_code[0],
+                code=new_code[1],
+                version=new_code[2]
+            )
+        else:
+            # If it exists, update it
+            resultCode = conn.execute("""
+                UPDATE codes SET 
+                    code = ?
+                WHERE id = ?
+                RETURNING id, code, version
+            """, [
+                code.code,
+                code.id
+            ]).fetchone()
+
+            return Code(
+                id=resultCode[0],
+                code=resultCode[1],
+                version=resultCode[2]
+            )   
+
+
 def save_codes(label_id: int, codes: list[Code]) -> list[int]:
     """Save codes to the database."""
-    return []
+    return [save_code(label_id, code) for code in codes]
 
 
 def save_label(desc_id: int, label: Labels) -> None:
@@ -356,6 +401,7 @@ def generate_action_labels(action: Action) -> Description:
         "description": action.descriptions[action.active_description].description,
     }
 
+    # TODO make call to the TableSwift framework to generate code
     output = [
         [{"Person": "John Doe", "Age": 30, "Location": "New York", "Income": 50000, "Married": "Yes", "Kids": 3, "Hobbies": "Football", "Favorite Dish": "Dönner"}, {"Label": "john doe"}],
         [{"Person": "Jane Smith", "Age": 25, "Location": "Los Angeles", "Income": 60000, "Married": "No", "Kids": 0, "Hobbies": "Reading", "Favorite Dish": "Pasta"}, {"Label": "jane smith"}],
@@ -486,4 +532,80 @@ def update_labels(labels: Labels) -> None:
         """, [
             json.dumps(labels.json),
             labels.id
+        ])
+
+def generate_action_code(action: Action) -> None:
+    """Generate code for an action."""
+    input = {
+        "function": action.operation.name,
+        "column": action.file_column,
+        "description": action.descriptions[action.active_description].description,
+        "labels": action.descriptions[action.active_description].labels[action.active_labels].json,
+    }
+
+    saved_action = update_action(action.id, action)
+
+    # TODO make call to the TableSwift framework to generate code
+    output = """
+        def test_function():
+            # This is a test function
+            pass
+            
+        def another_function():
+            # This is another test function
+            pass
+            
+        def yet_another_function():
+            # This is yet another test function
+            pass
+    """
+
+    with get_db() as conn:
+        # First get the next version number
+        version_result = conn.execute("""
+            SELECT COALESCE(MAX(version) + 1, 1)
+            FROM codes
+            WHERE label_id = ?
+        """, [saved_action.descriptions[action.active_description].labels[action.active_labels].id]).fetchone()
+        next_version = version_result[0]
+
+        # Then do the insert
+        result = conn.execute("""
+            INSERT INTO codes (code, label_id, version)
+            VALUES (?, ?, ?)
+            RETURNING id
+        """, [
+            output,
+            saved_action.descriptions[action.active_description].labels[action.active_labels].id,
+            next_version
+        ]).fetchone()
+
+    return Code(
+        id=result[0],
+        code=output,
+        version=next_version
+    )
+
+
+def update_code(code: Code) -> None:
+    """Update code for an action."""
+    with get_db() as conn:
+        # Check if the code exists
+        existing_code = conn.execute("""
+            SELECT id FROM codes WHERE id = ?
+        """, [code.id]).fetchone()
+
+        print(existing_code)
+
+        if not existing_code:
+            raise ValueError("Code not found")
+
+        # If it exists, update it
+        conn.execute("""
+            UPDATE codes SET 
+                code = ?
+            WHERE id = ?
+        """, [
+            code.code,
+            code.id
         ])
