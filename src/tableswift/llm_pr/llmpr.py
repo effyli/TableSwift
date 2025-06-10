@@ -5,7 +5,7 @@ import logging
 import instructor
 
 from pydantic import BaseModel
-from src.utils import function_utils
+from src.tableswift.utils import function_utils
 
 
 logger = logging.getLogger(__name__)
@@ -17,13 +17,15 @@ prefix_instr_dt = [{"role": "system", "content": "You are helpful assistant. Giv
 prefix_instr_em = [{"role": "system", "content": "You are helpful assistant. Given the following entities, figure out if entity A is the same with entity B. Yes or No?"}]
 demonstration_instr = [{"role": "user", "content": f"""Instructions: {{instruction}}, Examples: {{examples}}"""}]
 
+
 class LLMPR:
-    def __init__(self, model_name, task) -> None:
+    def __init__(self, model_name, task, api_key) -> None:
         self.model_name = model_name
         self.task = task
+        self.api_key = api_key
 
     def formulate_prompt(self, instruction, examples):
-        print(f"Current demonstration_instr is ", demonstration_instr)
+        # print(f"Current demonstration template is ", demonstration_instr)
         prefix = []
         if self.task == "data transformation":
             prefix = copy.deepcopy(prefix_instr_dt)
@@ -38,14 +40,30 @@ class LLMPR:
 
     def call_llm(self, message_row):
         # we run the LLM on the invalid rows
-        client = instructor.from_openai(client = openai.OpenAI(api_key="your key here"))
+        client = instructor.from_openai(client = openai.OpenAI(api_key=self.api_key))
         # Extract structured data from natural language
         structured_output = client.chat.completions.create(
-            model="gpt-4-turbo",
+            model=self.model_name,
             response_model=LLMPRResponse,
             messages=message_row,
         )
         return structured_output
+    
+    def execute(self, messages, test_data):
+        """
+        We run the LLM on the invalid rows, and return results. No gts.
+        """
+        transformed_data = []
+        for row in test_data:
+            message_row = copy.deepcopy(messages) + [{"role": "user", "content": f"Input: {row['Input']}\nOutput:"}]
+            structured_output = self.call_llm(message_row)
+            if structured_output.output:
+                output_pred = structured_output.output.lower().strip()
+            else:
+                output_pred = structured_output.output
+            row['Output'] = output_pred
+            transformed_data.append(row)
+        return transformed_data
         
     def evaluate(self, messages, test_data):
         all_outputs_preds = []
@@ -67,15 +85,28 @@ class LLMPR:
             all_outputs_gt.append(output_row)
         return all_outputs_gt, all_outputs_preds
 
-    def pipeline(self, examples, test_data):
+    def pipeline(self, instructions, examples, test_data):
         """
         We run the LLM on the invalid rows, and then calculate the accruacy.
         """
         logger.info(f"Running fallback solution on {len(test_data)} invalid rows")
         examples=function_utils.dicts_to_string(examples)
-        messages = self.formulate_prompt(self.task, examples)
+        messages = self.formulate_prompt(instructions, examples)
         gts, preds = self.evaluate(messages, test_data)
         return gts, preds
+    
+    def pipeline_no_eval(self, instruction, examples, test_data):
+        """
+        Inference piopeline without evaluation.
+        """
+        logger.info(f"Running fallback solution on {len(test_data)} invalid rows")
+        if examples:
+            examples=function_utils.dicts_to_string(examples)
+        else:
+            examples = ""
+        messages = self.formulate_prompt(instruction, examples)
+        transformed_data = self.execute(messages, test_data)
+        return transformed_data
 
 
 

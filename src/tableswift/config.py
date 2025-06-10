@@ -11,6 +11,8 @@ DEFAULT_PARAMS = {
     "num_retry": 3,
     "seed": 42,
     "num_iterations": 2,
+    "max_num_solutions": 3,
+    "limit_fallback": 20, # number of invalid data samples before fallback, should be a percentage in the future
     "llm": "gpt-4o-mini" 
 }
 

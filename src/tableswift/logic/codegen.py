@@ -78,4 +78,4 @@ def generate_code_logic(lang:str, task:str, instruction:str,
             best_router_func = None
     # logger.info("Best function is {}".format(best_func))
     # logger.info("Best router function is {}".format(best_router_func))
-    return best_func
+    return best_func, best_router_func

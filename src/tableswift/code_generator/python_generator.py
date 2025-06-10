@@ -216,6 +216,7 @@ class PythonGenerator(CodeGenerator):
                 try:
                     decision, _ = self.execute(v_fn, input, "validation")
                     logger.info(f"======> Decision for input {input} is {decision} <======")
+                    print(f"======> Decision for input {input} is {decision} <======")
                     if decision:
                         valid_data.append({"Input": input, "Output": output})
                     else:
@@ -236,7 +237,7 @@ class PythonGenerator(CodeGenerator):
         num_iter = 1
         functions_stack = []
         result = None
-        while num_iter < depth:
+        while num_iter <= depth:
             # getting the first function
             response = self.get_response(messages)
             result = self.post_process(response)
