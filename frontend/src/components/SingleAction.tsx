@@ -165,6 +165,22 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
     }
   };
 
+  const executeCode = async () => {
+    if (!projectAction) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    try {
+      const formattedAction = formatActionJson(JSON.parse(JSON.stringify(projectAction)));
+      const result = await actionService.executeCode(formattedAction);
+      console.log('Execution result:', result);
+    } catch (error) {
+      setError('Failed to execute code');
+      console.error('Error executing code:', error);
+    }
+  }
+
   return (
     <div ref={containerRef} className="bg-black border-r border-black-lighter p-8 pb-24 pt-0 h-full flex flex-col overflow-auto custom-scrollbar">
       <div className="bg-black sticky top-0 py-4 flex flex-col gap-y-4 z-100">
@@ -233,6 +249,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
                       codes={projectAction?.descriptions[projectAction.active_description]?.labels?.[projectAction.active_labels]?.codes || []} 
                       activeCode={projectAction?.active_code || 0}
                       onFieldChange={handleActionChange}
+                      executeCode={executeCode}
                     />
                   )}
                 </>

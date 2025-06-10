@@ -10,9 +10,10 @@ interface CodeFormProps {
     codes: Code[];
     activeCode: number;
     onFieldChange: (field: keyof Action, value: any) => void;
+    executeCode: () => void;
 }
 
-export const CodeForm: React.FC<CodeFormProps> = ({ codes, activeCode, onFieldChange }) => {
+export const CodeForm: React.FC<CodeFormProps> = ({ codes, activeCode, onFieldChange, executeCode }) => {
     const [isSavingCode, setIsSavingCode] = useState(false);
     const [isExecutingCode, setIsExecutingCode] = useState(false);
     const [editableCode, setEditableCode] = useState<string>('');
@@ -67,10 +68,13 @@ export const CodeForm: React.FC<CodeFormProps> = ({ codes, activeCode, onFieldCh
 
     const handleExecuteCode = () => {
         setIsExecutingCode(true)
-        const codeToExecute = editableCode;
-        setTimeout(() => {
+        try {
+            executeCode();
+        } catch (error) {
+            console.error('Error generating labels:', error);
+        } finally {
             setIsExecutingCode(false);
-        }, 3000);
+        }
     }
 
     return (

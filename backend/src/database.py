@@ -148,6 +148,7 @@ def init_db():
                 id INTEGER PRIMARY KEY
                     DEFAULT nextval('code_id_seq'),
                 code VARCHAR NOT NULL,
+                router_code VARCHAR NOT NULL,
                 version INTEGER NOT NULL,
                 label_id INTEGER NOT NULL
             );

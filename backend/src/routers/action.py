@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from ..models.action import Action, ActionCreate, ActionBase
 from ..models.user import TokenData
-from ..services.action import create_action, get_action, update_action, delete_action, generate_action_labels, update_labels, generate_action_code, update_code
+from ..services.action import create_action, get_action, update_action, delete_action, generate_action_labels, update_labels, generate_action_code, update_code, execute_code
 from ..dependencies import validate_token
 from ..dependencies.csrf import validate_csrf_token
 import traceback
@@ -136,4 +136,18 @@ async def save_code(code: Code, _: TokenData = Depends(validate_token)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to save code"
+        )
+    
+@router.post("/execute_code", dependencies=[Depends(validate_csrf_token)])
+async def execute_code_endpoint(action: Action, token_data: TokenData = Depends(validate_token)):
+    """Execute code for the action."""
+    try:
+        result = await execute_code(action, token_data.user_id)
+        return {"message": "Code executed successfully", "result": result}
+    except Exception as e:
+        print(f"Error in execute_code: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to execute code"
         )

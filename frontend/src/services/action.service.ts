@@ -75,5 +75,14 @@ export const actionService = {
         } catch (error) {
             throw new Error('Failed to save code');
         }
+    },
+
+    async executeCode(action: Action): Promise<any> {
+        try {
+            const response = await axiosInstance.post<any>(`/action/execute_code`, action);
+            return response.data;
+        } catch (error) {
+            throw new Error('Failed to execute code');
+        }
     }
 };

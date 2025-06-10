@@ -40,11 +40,8 @@ async def get_file_data_tableswift(project_id: UUID, user_id: UUID, column: Opti
                     detail=f"Column '{column}' does not exist in the file."
                 )
             
-            return format_data_tableswift(df[column].tolist(), column)
-            # Map single column values to Input/Output format
             result = [{"Input": str(value), "Output": ""} for value in df[column]]
         else:
-            return format_data_tableswift(df[column].tolist(), column)
             # Map entire rows to Input/Output format
             # TODO format correctly
             result = [{"Input": str(row), "Output": ""} for _, row in df.iterrows()]

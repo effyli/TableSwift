@@ -10,7 +10,7 @@ interface LabelFormProps {
     labels: Labels[];
     activeLabels: number;
     selectedOperation?: Operation;
-    generateCode: (labels: any) => void;
+    generateCode: () => void;
     onFieldChange: (field: keyof Action, value: any) => void;
 }
 
@@ -83,7 +83,7 @@ export const LabelForm: React.FC<LabelFormProps> = ({ labels, activeLabels, sele
     const handleGenerateCode = () => {
         setIsLoadingGenerating(true);
         try {
-            generateCode(editableLabels);
+            generateCode();
         } catch (error) {
             console.error('Error generating labels:', error);
         } finally {

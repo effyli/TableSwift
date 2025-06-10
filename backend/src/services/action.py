@@ -129,7 +129,7 @@ def get_action(action_id: int) -> Action:
             for label in labels_result:
                 # Get all codes for this description
                 codes_result = conn.execute("""
-                    SELECT id, code, version
+                    SELECT id, code, router_code, version
                     FROM codes 
                     WHERE label_id = ?
                     ORDER BY version
@@ -138,7 +138,8 @@ def get_action(action_id: int) -> Action:
                 codes = [Code(
                     id=code[0],
                     code=code[1],
-                    version=code[2]
+                    router_code=code[2],
+                    version=code[3]
                 ) for code in codes_result]
 
                 labels.append(Labels(
@@ -231,11 +232,12 @@ def save_code(label_id: int, code: Code) -> Code:
         if not existing_code:
             # If it doesn't exist, create a new one
             new_code = conn.execute("""
-                INSERT INTO codes (code, label_id, version)
-                VALUES (?, ?, COALESCE((SELECT CAST(MAX(version) AS INTEGER) + 1 FROM codes WHERE label_id = ?), 1))
-                RETURNING id, code, version
+                INSERT INTO codes (code, router_code, label_id, version)
+                VALUES (?, ?, ?, COALESCE((SELECT CAST(MAX(version) AS INTEGER) + 1 FROM codes WHERE label_id = ?), 1))
+                RETURNING id, code, router_code, version
             """, [
                 code.code,
+                code.router_code,
                 label_id,
                 label_id  # For the version subquery
             ]).fetchone()
@@ -243,6 +245,7 @@ def save_code(label_id: int, code: Code) -> Code:
             return Code(
                 id=new_code[0],
                 code=new_code[1],
+                router_code=new_code[2],
                 version=new_code[2]
             )
         else:
@@ -251,7 +254,7 @@ def save_code(label_id: int, code: Code) -> Code:
                 UPDATE codes SET 
                     code = ?
                 WHERE id = ?
-                RETURNING id, code, version
+                RETURNING id, code, router_code, version
             """, [
                 code.code,
                 code.id
@@ -260,8 +263,9 @@ def save_code(label_id: int, code: Code) -> Code:
             return Code(
                 id=resultCode[0],
                 code=resultCode[1],
-                version=resultCode[2]
-            )   
+                router_code=resultCode[2],
+                version=resultCode[3]
+            )
 
 
 def save_codes(label_id: int, codes: list[Code]) -> list[int]:
@@ -559,11 +563,6 @@ def update_labels(labels: Labels) -> None:
 
 def generate_action_code(action: Action) -> None:
     """Generate code for an action."""
-    # # Get the labels data - it's already a Python object, no need to parse JSON
-    # labels_data = action.descriptions[action.active_description].labels[action.active_labels].json
-    # print("Labels data:", labels_data)
-
-
     input = {
         "function": OPERATIONS[action.operation.id],
         "column": action.file_column,
@@ -574,7 +573,6 @@ def generate_action_code(action: Action) -> None:
 
     # Call the TableSwift framework to generate code
     ts.configure(api_key=settings.LLM_API_KEY)
-    # TODO store the router code
     code, router_code = ts.generate_code(instruction=input["description"],
                     task=input["function"],
                     samples=input["labels"],
@@ -599,11 +597,12 @@ def generate_action_code(action: Action) -> None:
 
         # Then do the insert
         result = conn.execute("""
-            INSERT INTO codes (code, label_id, version)
-            VALUES (?, ?, ?)
+            INSERT INTO codes (code, router_code, label_id, version)
+            VALUES (?, ?, ?, ?)
             RETURNING id
         """, [
             code,
+            router_code,
             saved_action.descriptions[action.active_description].labels[action.active_labels].id,
             next_version
         ]).fetchone()
@@ -611,6 +610,7 @@ def generate_action_code(action: Action) -> None:
     return Code(
         id=result[0],
         code=code,
+        router_code=router_code,
         version=next_version
     )
 
@@ -637,3 +637,29 @@ def update_code(code: Code) -> None:
             code.code,
             code.id
         ])
+
+
+async def execute_code(action: Action, user_id: UUID) -> None:
+    input = {
+        "function": OPERATIONS[action.operation.id],
+        "column": action.file_column,
+        "description": action.descriptions[action.active_description].description,
+        "labels": format_data_tableswift(action.descriptions[action.active_description].labels[action.active_labels].json, action.file_column),
+        "code": action.descriptions[action.active_description].labels[action.active_labels].codes[action.active_code].code,
+    }
+    
+    ts.configure(api_key=settings.LLM_API_KEY)
+    results, invalid_data = ts.execute_code(input["code"],
+        instruction=input["description"],
+        task=input["function"],
+        lang="python",
+        inputs=await get_file_data_tableswift(action.project_id, user_id, action.file_column if action.operation.id != 4 else None),
+        samples=input["labels"],
+        router_code="")
+    
+    print("Execution results:", results)
+    print("Invalid data:", invalid_data)
+
+    # TODO adjust the file with the results
+    # TODO make a diff file
+    # TODO make the affected rows page
