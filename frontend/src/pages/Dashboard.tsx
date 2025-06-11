@@ -47,6 +47,7 @@ export const Dashboard: React.FC = () => {
 
     setIsLoadingProject(true);
     projectService.getProjectDetails(projectId, actionId).then((projectData) => {
+      console.log("Project data loaded:", projectData);
       setProject(projectData);
       setFileColumns(projectData?.file?.data?.[0] ? Object.keys(projectData.file.data[0]) : []);
     }).catch((error) => {
@@ -147,6 +148,7 @@ export const Dashboard: React.FC = () => {
                         projectAction={project?.active_action}
                         isLoadingProject={isLoadingProject}
                         onActionUpdate={handleSetActionUpdate}
+                        handleFileDataUpdate={handleFileDataUpdate}
                         operations={operations}
                         fileColumns={fileColumns}
                       />
@@ -183,6 +185,7 @@ export const Dashboard: React.FC = () => {
                         projectAction={project?.active_action}
                         isLoadingProject={isLoadingProject}
                         onActionUpdate={handleSetActionUpdate}
+                        handleFileDataUpdate={handleFileDataUpdate}
                         operations={operations}
                         fileColumns={fileColumns}
                       />

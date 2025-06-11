@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Action } from '../types/action';
 import { Operation } from '../types/operation';
+import { File } from '../types/file';
 import { actionService } from '../services/action.service';
 import { ActionForm } from './ActionForm';
 import { LabelForm } from './LabelForm';
@@ -12,11 +13,12 @@ interface SingleActionProps {
     projectAction: Action | null | undefined;
     isLoadingProject: boolean;
     onActionUpdate: (action: Action | null) => void;
+    handleFileDataUpdate: (file: File) => void;
     operations: Operation[];
     fileColumns: string[];
 }
 
-export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoadingProject, onActionUpdate, operations, fileColumns }) => {
+export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoadingProject, onActionUpdate, handleFileDataUpdate, operations, fileColumns }) => {
   const { projectId, actionId } = useParams();
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -175,6 +177,7 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
       const formattedAction = formatActionJson(JSON.parse(JSON.stringify(projectAction)));
       const result = await actionService.executeCode(formattedAction);
       console.log('Execution result:', result);
+      handleFileDataUpdate(result);
     } catch (error) {
       setError('Failed to execute code');
       console.error('Error executing code:', error);

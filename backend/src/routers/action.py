@@ -8,6 +8,7 @@ import traceback
 from ..models.labels import Labels
 from ..models.description import Description
 from ..models.code import Code
+from ..models.file import File
 
 router = APIRouter(
     prefix="/action",
@@ -138,12 +139,11 @@ async def save_code(code: Code, _: TokenData = Depends(validate_token)):
             detail="Failed to save code"
         )
     
-@router.post("/execute_code", dependencies=[Depends(validate_csrf_token)])
+@router.post("/execute_code", dependencies=[Depends(validate_csrf_token)], response_model=File)
 async def execute_code_endpoint(action: Action, token_data: TokenData = Depends(validate_token)):
     """Execute code for the action."""
     try:
-        result = await execute_code(action, token_data.user_id)
-        return {"message": "Code executed successfully", "result": result}
+        return await execute_code(action, token_data.user_id)
     except Exception as e:
         print(f"Error in execute_code: {str(e)}")
         print(traceback.format_exc())

@@ -27,7 +27,9 @@ async def get_file_data_tableswift(project_id: UUID, user_id: UUID, column: Opti
     Returns a tuple of (data_rows, total_rows).
     """
     try:
+        print(f"Fetching file data for project_id: {project_id}, user_id: {user_id}, column: {column}")
         file_path = get_project_file_path(project_id, user_id)
+        print(f"Reading file from path: {file_path}")
 
         # Read the CSV file
         df = pd.read_csv(file_path)
@@ -40,12 +42,12 @@ async def get_file_data_tableswift(project_id: UUID, user_id: UUID, column: Opti
                     detail=f"Column '{column}' does not exist in the file."
                 )
             
-            result = [{"Input": str(value), "Output": ""} for value in df[column]]
+            result = [{"Input": value, "Output": ""} for value in df[column]]
         else:
             # Map entire rows to Input/Output format
             # TODO format correctly
-            result = [{"Input": str(row), "Output": ""} for _, row in df.iterrows()]
-            
+            result = [{"Input": row, "Output": ""} for _, row in df.iterrows()]
+
         return result
         
     except Exception as e:

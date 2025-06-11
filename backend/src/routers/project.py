@@ -6,6 +6,7 @@ from ..services.action import get_project_actions, get_action
 from ..dependencies.csrf import validate_csrf_token
 from ..models.project import ProjectBase, ProjectCreate, Project
 from ..models.user import TokenData
+from ..models.file import File as FileModel
 from typing import List
 import traceback
 from uuid import UUID
@@ -174,16 +175,18 @@ async def get_project_details(
         
         # Get file data with pagination
         try:
-            file_data = await get_file_data(project.file.file_path)
-            project.file.data = file_data["data"]
-            project.file.total_rows = file_data["total_rows"]
-            project.file.loaded_rows = file_data["loaded_rows"]
+            project.file = await get_file_data(project.file.file_path)
+            # project.file.data = file_data["data"]
+            # project.file.total_rows = file_data["total_rows"]
+            # project.file.loaded_rows = file_data["loaded_rows"]
         except Exception as e:
             print(f"Error reading file data: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to read file data"
             )
+        
+        print(f"Project details fetched successfully for {project_id}: {project.file.data}")
         
         return project
             
@@ -197,7 +200,7 @@ async def get_project_details(
             detail="Failed to fetch project details"
         )
 
-@router.get("/{project_id}/data", response_model=dict)
+@router.get("/{project_id}/data", response_model=FileModel)
 @cache(namespace="{project_id}", expire=60)
 async def get_project_data(
     project_id: UUID,

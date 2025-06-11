@@ -5,6 +5,7 @@ type DiffRow = Record<string, string>;
 export const DiffViewer: React.FC = () => {
   const [headers, setHeaders] = useState<string[]>([]);
   const [rows, setRows] = useState<DiffRow[]>([]);
+  const [changedColumns, setChangedColumns] = useState<Set<string>>(new Set());
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -24,6 +25,8 @@ export const DiffViewer: React.FC = () => {
     setHeaders(cols);
 
     const out: DiffRow[] = [];
+    const changedCols = new Set<string>();
+
     for (let i = 0; i < lines.length; i++) {
       if (lines[i].startsWith('-')) {
         const oldVals = lines[i].replace(/^-.\s*/, '').split(',');
@@ -34,8 +37,13 @@ export const DiffViewer: React.FC = () => {
 
           const row: DiffRow = {};
           cols.forEach((c, idx) => {
-            row[c] = newVals[idx]; // left: updated
-            row[`Original ${c}`] = oldVals[idx]; // right: original
+            const newVal = newVals[idx];
+            const oldVal = oldVals[idx];
+            row[c] = newVal;
+            row[`Original ${c}`] = oldVal;
+            if (newVal !== oldVal) {
+              changedCols.add(c);
+            }
           });
           out.push(row);
           i = j;
@@ -43,6 +51,7 @@ export const DiffViewer: React.FC = () => {
       }
     }
     setRows(out);
+    setChangedColumns(changedCols);
   }
 
   return (
@@ -64,8 +73,8 @@ export const DiffViewer: React.FC = () => {
         >
           <thead>
             <tr>
-              {/* updated headers first */}
-              {headers.map(h => (
+              {/* Only show headers for changed columns */}
+              {headers.filter(h => changedColumns.has(h)).map(h => (
                 <th
                   key={`new-h-${h}`}
                   style={{
@@ -77,8 +86,7 @@ export const DiffViewer: React.FC = () => {
                   Updated {h}
                 </th>
               ))}
-              {/* original headers second */}
-              {headers.map(h => (
+              {headers.filter(h => changedColumns.has(h)).map(h => (
                 <th
                   key={`old-h-${h}`}
                   style={{
@@ -95,27 +103,24 @@ export const DiffViewer: React.FC = () => {
           <tbody>
             {rows.map((row, ri) => (
               <tr key={ri}>
-                {/* updated values in green */}
-                {headers.map(h => (
+                {/* Only show values for changed columns */}
+                {headers.filter(h => changedColumns.has(h)).map(h => (
                   <td
                     key={`new-${ri}-${h}`}
                     style={{
                       padding: '6px 8px',
-                      color:
-                        row[`Original ${h}`] !== row[h] ? 'green' : undefined,
+                      color: 'green',
                     }}
                   >
                     {row[h]}
                   </td>
                 ))}
-                {/* original values in red */}
-                {headers.map(h => (
+                {headers.filter(h => changedColumns.has(h)).map(h => (
                   <td
                     key={`old-${ri}-${h}`}
                     style={{
                       padding: '6px 8px',
-                      color:
-                        row[`Original ${h}`] !== row[h] ? 'crimson' : undefined,
+                      color: 'crimson',
                     }}
                   >
                     {row[`Original ${h}`]}

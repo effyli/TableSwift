@@ -5,14 +5,17 @@ from ..models.action import ActionBase, Action, ActionCreate
 from ..models.operation import Operation
 from ..models.labels import Labels
 from ..models.description import Description
+from ..models.file import File
 from .tableswift_data import get_file_data_tableswift, format_data_tableswift
 from ..database import get_db
+from .file import process_file_changes
 from uuid import UUID
 import pandas as pd
 import json
 import tableswift as ts
 from tableswift import generate_labels
 from ..config import get_settings
+import os
 
 
 settings = get_settings()
@@ -421,8 +424,10 @@ async def generate_action_labels(action: Action, user_id: UUID) -> Description:
         "description": action.descriptions[action.active_description].description,
         "data": data_ts
     }
+    print("Input for label generation:", input)
 
     # Call the TableSwift framework to generate labels
+    # TODO add column name to input
     ts.configure(api_key=settings.LLM_API_KEY)
     labeled_data = ts.generate_labels(instruction=input["description"], task=input["function"], demonstrations=[], samples_to_label=input["data"])
 
@@ -578,11 +583,15 @@ def generate_action_code(action: Action) -> None:
                     samples=input["labels"],
                     lang="python",
                     num_trials=1,
-                    num_retry=1,
+                    num_retry=3,
                     num_iterations=1)
     
     print("Generated code:", code)
     print("Generated router code:", router_code)
+
+    # TODO remove if generation works properly
+    if not router_code:
+        router_code = "def validate(input_string): return True"
 
     saved_action = update_action(action.id, action)
 
@@ -639,27 +648,59 @@ def update_code(code: Code) -> None:
         ])
 
 
-async def execute_code(action: Action, user_id: UUID) -> None:
+async def execute_code(action: Action, user_id: UUID) -> File:
     input = {
         "function": OPERATIONS[action.operation.id],
         "column": action.file_column,
         "description": action.descriptions[action.active_description].description,
         "labels": format_data_tableswift(action.descriptions[action.active_description].labels[action.active_labels].json, action.file_column),
         "code": action.descriptions[action.active_description].labels[action.active_labels].codes[action.active_code].code,
+        "router_code": action.descriptions[action.active_description].labels[action.active_labels].codes[action.active_code].router_code,
+        "data": await get_file_data_tableswift(action.project_id, user_id, action.file_column if action.operation.id != 4 else None)
     }
+    print("Input for code execution:", input)
     
     ts.configure(api_key=settings.LLM_API_KEY)
     results, invalid_data = ts.execute_code(input["code"],
         instruction=input["description"],
         task=input["function"],
         lang="python",
-        inputs=await get_file_data_tableswift(action.project_id, user_id, action.file_column if action.operation.id != 4 else None),
+        inputs=input["data"],
         samples=input["labels"],
-        router_code="")
-    
+        router_code=input["router_code"]
+    )
+
     print("Execution results:", results)
     print("Invalid data:", invalid_data)
 
-    # TODO adjust the file with the results
-    # TODO make a diff file
-    # TODO make the affected rows page
+    # Get the file path for this action
+    with get_db() as conn:
+        file_result = conn.execute("""
+            SELECT f.file_path
+            FROM actions a
+            JOIN projects p ON a.project_id = p.id
+            JOIN files f ON p.file_id = f.id
+            WHERE a.id = ?
+        """, [action.id]).fetchone()
+        
+        if not file_result:
+            raise ValueError("File not found for this action")
+        
+        original_file_path = file_result[0]
+
+    # Extract new values from results
+    new_values = [result['Output'] for result in results]
+
+    print("New values to be written:", new_values)
+    
+    # Process file changes and generate diff
+    new_file = await process_file_changes(
+        original_file_path=original_file_path,
+        column_name=action.file_column,
+        new_values=new_values,
+        action_id=action.id,
+        project_id=action.project_id
+    )
+    print("New file path:", new_file)
+
+    return new_file

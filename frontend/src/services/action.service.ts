@@ -4,6 +4,7 @@ import { Action, ActionBase, ActionCreate
 import { Labels } from '../types/labels';
 import { Code } from '../types/code';
 import { Descriptions } from '../types/description';
+import { File } from '../types/file';
 
 export const actionService = {
     async createAction(action: ActionCreate): Promise<ActionBase> {
@@ -77,9 +78,9 @@ export const actionService = {
         }
     },
 
-    async executeCode(action: Action): Promise<any> {
+    async executeCode(action: Action): Promise<File> {
         try {
-            const response = await axiosInstance.post<any>(`/action/execute_code`, action);
+            const response = await axiosInstance.post<File>(`/action/execute_code`, action);
             return response.data;
         } catch (error) {
             throw new Error('Failed to execute code');
