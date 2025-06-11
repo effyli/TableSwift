@@ -8,6 +8,7 @@ import { ActionForm } from './ActionForm';
 import { LabelForm } from './LabelForm';
 import { CodeForm } from './CodeForm';
 import { formatActionJson } from '../util/formatAction';
+import { DiffViewer } from './Diff';
 
 interface SingleActionProps {
     projectAction: Action | null | undefined;
@@ -26,6 +27,10 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [showAffectedRows, setShowAffectedRows] = useState<boolean>(false);
+
+  useEffect(() => {
+    console.log(projectAction)
+  }, [projectAction]);
 
   useEffect(() => {
     scrollToBottom();
@@ -195,15 +200,17 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
             ← Back to Actions
           </button>
 
-          <div className='justify-self-end'>
-            <button
-              onClick={() => setShowAffectedRows(!showAffectedRows)}
-              className="min-w-[100px] px-4 py-2 bg-indigo-600 text-white rounded-lg
-                  transition-colors flex items-center justify-center gap-2 hover:bg-indigo-700"
-            >
-              {showAffectedRows ? 'Show Action' : 'Show Affected Rows'}
-            </button>
-          </div>
+          {projectAction && projectAction.file && (
+            <div className='justify-self-end'>
+              <button
+                onClick={() => setShowAffectedRows(!showAffectedRows)}
+                className="min-w-[100px] px-4 py-2 bg-indigo-600 text-white rounded-lg
+                    transition-colors flex items-center justify-center gap-2 hover:bg-indigo-700"
+              >
+                {showAffectedRows ? 'Show Action' : 'Show Affected Rows'}
+              </button>
+            </div>
+          )}
         </div>
 
         {error && (
@@ -220,16 +227,20 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
         </div>
       ) : (
         <>
-          {projectAction && (showAffectedRows ? (
+          {projectAction && (projectAction.file && showAffectedRows ? (
             <>
-              <h1>Affected rows</h1>
+              <DiffViewer 
+                action={projectAction}
+                file={projectAction.file}
+                handleActionChange={handleActionChange}
+              />
             </>
           ) : (
             <>
               <ActionForm
-                selectedOperation={projectAction?.operation?.id}
-                fileColumn={projectAction?.file_column}
-                descriptions={projectAction?.descriptions || []}
+                selectedOperation={projectAction.operation?.id}
+                fileColumn={projectAction.file_column}
+                descriptions={projectAction.descriptions || []}
                 activeDescription={projectAction?.active_description || 0}
                 operations={operations}
                 fileColumns={fileColumns}

@@ -166,7 +166,7 @@ async def get_project_details(
         # If actionId is provided, get the active action
         if actionId and actionId.isdigit():
             try:
-                action = get_action(int(actionId))
+                action = await get_action(int(actionId))
                 if str(action.project_id) == str(project_id):  # Verify the action belongs to this project
                     project.active_action = action
             except ValueError:
@@ -240,7 +240,7 @@ async def get_project_data(
             detail="Failed to fetch project data"
         )
 
-@router.get("/{project_id}/search")
+@router.get("/{project_id}/search", response_model=FileModel)
 @cache(namespace="{project_id}", expire=60)
 async def search_project_data(
     project_id: UUID,

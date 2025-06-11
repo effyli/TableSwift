@@ -8,7 +8,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoutes } from './components/ProtectedRoutes';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
-import { DiffViewer } from './pages/Diff';
+import { DiffViewer } from './components/Diff';
 import { ModalProvider } from './context/ModalContext';
 
 function App() {

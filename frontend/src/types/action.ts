@@ -14,6 +14,7 @@ export interface Action extends ActionBase {
     active_labels: number;
     active_code: number;
     descriptions: Descriptions[];
+    file?: File;
 }
 
 export interface ActionCreate {

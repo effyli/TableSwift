@@ -8,6 +8,7 @@ from typing import Tuple
 from ..models.file import CreateFile, File
 from ..database import get_db
 import difflib
+from typing import Optional
 
 async def save_file_db(file: CreateFile) -> int:
     """
@@ -118,11 +119,14 @@ async def delete_file(file_path: str) -> None:
         )
 
 
-async def get_file_data(file_path: str, limit: int = 20, offset: int = 0) -> File:
+async def get_file_data(file_path: str = None, limit: int = 20, offset: int = 0) -> Optional[File]:
     """
     Read a portion of the CSV file data.
     Returns a File model containing the data.
     """
+    if not file_path or not os.path.exists(file_path):
+        return None
+    
     try:
         # Read the CSV file
         df = pd.read_csv(file_path)
@@ -136,7 +140,7 @@ async def get_file_data(file_path: str, limit: int = 20, offset: int = 0) -> Fil
             "total_rows": total_rows,
             "loaded_rows": len(data)
         })
-        
+
         return File(
             file_path=file_path,
             data=data,
@@ -150,12 +154,15 @@ async def get_file_data(file_path: str, limit: int = 20, offset: int = 0) -> Fil
         )
 
 
-async def search_file_data(file_path: str, search_term: str, limit: int = 20, offset: int = 0):
+async def search_file_data(file_path: str, search_term: str, limit: int = 20, offset: int = 0) -> Optional[File]:
     """
     Search CSV file data for rows matching the search term.
     Returns matching rows with pagination and total count.
     """
     try:
+        if not file_path or not os.path.exists(file_path):
+            return None
+    
         # Read the CSV file
         df = pd.read_csv(file_path)
         
@@ -177,11 +184,12 @@ async def search_file_data(file_path: str, search_term: str, limit: int = 20, of
         paginated_df = matching_df.iloc[offset:offset + limit]
         data = paginated_df.to_dict('records')
         
-        return {
-            "data": data,
-            "total_rows": total_matches,
-            "loaded_rows": len(data)
-        }
+        return File(
+            file_path=file_path,
+            data=data,
+            total_rows=total_matches,
+            loaded_rows=len(data)
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -211,29 +219,29 @@ async def process_file_changes(original_file_path: str, column_name: str, new_va
         
         # Create paths for new and diff files
         new_file_path = os.path.join(file_dir, f"{base_name}_{timestamp}{ext}")
-        diff_file_path = os.path.join(file_dir, f"{base_name}_{timestamp}_diff.txt")
+        diff_file_path = os.path.join(file_dir, f"{base_name}_{timestamp}_diff.csv")
 
         # Save new file
         df_new.to_csv(new_file_path, index=False)
 
-        # Create diff using difflib
-        with open(new_file_path, 'r', encoding='utf-8') as f_new, \
-             open(original_file_path, 'r', encoding='utf-8') as f_orig:
-            new_lines = f_new.readlines()
-            orig_lines = f_orig.readlines()
+        # Create diff DataFrame by comparing original and new values
+        # TODO check how this is processed to the frontend and show it properly
+        diff_rows = []
+        for idx in range(len(df_original)):
+            old_val = df_original.at[idx, column_name]
+            new_val = df_new.at[idx, column_name]
+            if old_val != new_val:
+                diff_rows.append({
+                    f'new_{column_name}': new_val,
+                    f'old_{column_name}': old_val
+                })
 
-        # Create a unified diff
-        diff_lines = list(difflib.unified_diff(
-            orig_lines, 
-            new_lines,
-            fromfile=original_file_path,
-            tofile=new_file_path,
-            lineterm=''
-        ))
-
-        # Write the diff out
-        with open(diff_file_path, 'w', encoding='utf-8') as f_diff:
-            f_diff.write('\n'.join(diff_lines))
+        print(f"Diff rows: {diff_rows}")
+        # Create diff DataFrame and save as CSV
+        if diff_rows:
+            df_diff = pd.DataFrame(diff_rows)
+            df_diff.to_csv(diff_file_path, index=False)
+            print(f"df diff: {df_diff}")
 
         # Store file information in database
         with get_db() as conn:

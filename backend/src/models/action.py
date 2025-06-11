@@ -5,6 +5,7 @@ from uuid import UUID
 from .operation import Operation
 from .labels import Labels
 from .description import Description
+from .file import File
 
 class ActionBase(BaseModel):
     id: int
@@ -18,6 +19,7 @@ class Action(ActionBase):
     active_labels: int = 0
     active_code: int = 0
     descriptions: list[Description] = []
+    file: Optional[File] = None
 
     class Config:
         from_attributes = True

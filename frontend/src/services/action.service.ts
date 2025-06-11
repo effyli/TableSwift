@@ -6,6 +6,8 @@ import { Code } from '../types/code';
 import { Descriptions } from '../types/description';
 import { File } from '../types/file';
 
+const DEFAULT_PAGE_SIZE = 20;
+
 export const actionService = {
     async createAction(action: ActionCreate): Promise<ActionBase> {
         try {
@@ -85,5 +87,27 @@ export const actionService = {
         } catch (error) {
             throw new Error('Failed to execute code');
         }
-    }
-};
+    },
+
+    async loadAffectedRows(action_id: number, offset: number, limit: number = DEFAULT_PAGE_SIZE): Promise<File> {
+        try {
+            const response = await axiosInstance.get(`/action/${action_id}/affected_rows`, {
+                params: { offset, limit }
+            });
+            return response.data;
+        } catch (error) {
+            throw new Error('Failed to load affected rows');
+        }
+    },
+
+    async searchAffectedRows(action_id: number, query: string, offset: number = 0, limit: number = DEFAULT_PAGE_SIZE): Promise<File> {
+        try {
+            const response = await axiosInstance.get(`/action/${action_id}/search`, {
+                params: { query, offset, limit }
+            });
+            return response.data;
+        } catch (error) {
+            throw new Error('Failed to search affected rows');
+        }
+    },
+}

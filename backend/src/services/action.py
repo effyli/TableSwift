@@ -8,14 +8,12 @@ from ..models.description import Description
 from ..models.file import File
 from .tableswift_data import get_file_data_tableswift, format_data_tableswift
 from ..database import get_db
-from .file import process_file_changes
+from .file import process_file_changes, get_file_data
 from uuid import UUID
 import pandas as pd
 import json
 import tableswift as ts
-from tableswift import generate_labels
 from ..config import get_settings
-import os
 
 
 settings = get_settings()
@@ -86,7 +84,7 @@ def delete_action(action_id: int) -> None:
         return None
     
 
-def get_action(action_id: int) -> Action:
+async def get_action(action_id: int) -> Action:
     """Get an action by its ID."""
     with get_db() as conn:
         # First get the action details
@@ -97,9 +95,11 @@ def get_action(action_id: int) -> Action:
                 a.datetime, 
                 a.operation_id,
                 o.name AS operation_name,
-                a.file_column 
+                a.file_column,
+                f.file_path
             FROM actions a
             LEFT JOIN operations o ON a.operation_id = o.id
+            LEFT JOIN files f ON a.file_id = f.id
             WHERE a.id = ?
         """, [action_id]).fetchone()
         
@@ -168,7 +168,8 @@ def get_action(action_id: int) -> Action:
             active_description=len(descriptions) - 1,
             active_labels=len(descriptions[-1].labels) - 1 if descriptions else 0,
             active_code=len(descriptions[-1].labels[-1].codes) - 1 if descriptions and descriptions[-1].labels else 0,
-            descriptions=descriptions
+            descriptions=descriptions,
+            file=await get_file_data(action_result[6])
         )
 
 
@@ -472,78 +473,6 @@ async def generate_action_labels(action: Action, user_id: UUID) -> Description:
         ]
     )
 
-    # output = [
-    #     [{"Person": "John Doe", "Age": 30, "Location": "New York", "Income": 50000, "Married": "Yes", "Kids": 3, "Hobbies": "Football", "Favorite Dish": "Dönner"}, {"Label": "john doe"}],
-    #     [{"Person": "Jane Smith", "Age": 25, "Location": "Los Angeles", "Income": 60000, "Married": "No", "Kids": 0, "Hobbies": "Reading", "Favorite Dish": "Pasta"}, {"Label": "jane smith"}],
-    #     [{"Person": "Bob Johnson", "Age": 40, "Location": "Chicago", "Income": 70000, "Married": "Yes", "Kids": 2, "Hobbies": "Golf", "Favorite Dish": "Steak"}, {"Label": "bob johnson"}],
-    #     [{"Person": "Mary Williams", "Age": 35, "Location": "Houston", "Income": 80000, "Married": "No", "Kids": 1, "Hobbies": "Cooking", "Favorite Dish": "Tacos"}, {"Label": "mary williams"}],
-    #     [{"Person": "James Brown", "Age": 50, "Location": "Phoenix", "Income": 90000, "Married": "Yes", "Kids": 4, "Hobbies": "Traveling", "Favorite Dish": "Sushi"}, {"Label": "james brown"}]
-    # ]
-    # output = [
-    #     [
-    #         {
-    #             "Person": "John Doe",
-    #             "Age": 30.0,
-    #         },
-    #         {
-    #             "Person": "john doe",
-    #             "Age": 30,
-    #         },
-    #     ],
-    #     [
-    #         {
-    #             "Person": "Jane Smith",
-    #             "Age": 25.0,
-    #         }, 
-    #         {
-    #             "Person": "jane smith",
-    #             "Age": 25,
-    #         }
-    #     ],
-    #     [
-    #         {
-    #             "Person": "John Doe",
-    #             "Age": 30.0,
-    #         },
-    #         {
-    #             "Person": "john doe",
-    #             "Age": 30,
-    #         },
-    #     ],
-    #     [
-    #         {
-    #             "Person": "Jane Smith",
-    #             "Age": 25.0,
-    #         }, 
-    #         {
-    #             "Person": "jane smith",
-    #             "Age": 25,
-    #         }
-    #     ],
-    # ]
-    # output = [
-    #     [{
-    #         "Person": "John Doe",
-    #         "Age": 30,
-    #     }, "john doe"],
-    #     [{
-    #         "Person": "Jane Smith",
-    #         "Age": 25,
-    #     }, "jane smith"],
-    #     [{
-    #         "Person": "Bob Johnson",
-    #         "Age": 40,
-    #     }, "bob johnson"],
-    #     [{
-    #         "Person": "Mary Williams",
-    #         "Age": 35,
-    #     }, "mary williams"],
-    #     [{
-    #         "Person": "James Brown",
-    #         "Age": 50,
-    #     }, "james brown"]
-    # ]
-
 
 def update_labels(labels: Labels) -> None:
     """Update labels for an action."""
@@ -583,7 +512,7 @@ def generate_action_code(action: Action) -> None:
                     samples=input["labels"],
                     lang="python",
                     num_trials=1,
-                    num_retry=3,
+                    num_retry=1,
                     num_iterations=1)
     
     print("Generated code:", code)
@@ -704,3 +633,57 @@ async def execute_code(action: Action, user_id: UUID) -> File:
     print("New file path:", new_file)
 
     return new_file
+
+def check_action_ownership(action_id: int, user_id: UUID) -> bool:
+    """
+    Check if an action belongs to a user by verifying project ownership.
+    Returns True if the action belongs to the user, False otherwise.
+    """
+    with get_db() as conn:
+        result = conn.execute("""
+            SELECT 1
+            FROM actions a
+            JOIN projects p ON a.project_id = p.id
+            WHERE a.id = ? AND p.user_id = ?
+        """, [action_id, user_id]).fetchone()
+        
+        return result is not None
+
+
+def check_label_ownership(label_id: int, user_id: UUID) -> bool:
+    """
+    Check if a label belongs to a user by verifying the ownership chain:
+    label -> description -> action -> project -> user
+    Returns True if the label belongs to the user, False otherwise.
+    """
+    with get_db() as conn:
+        result = conn.execute("""
+            SELECT 1
+            FROM labels l
+            JOIN description d ON l.description_id = d.id
+            JOIN actions a ON d.action_id = a.id
+            JOIN projects p ON a.project_id = p.id
+            WHERE l.id = ? AND p.user_id = ?
+        """, [label_id, str(user_id)]).fetchone()
+        
+        return result is not None
+
+
+def check_code_ownership(code_id: int, user_id: UUID) -> bool:
+    """
+    Check if a code record belongs to a user by verifying the ownership chain:
+    code -> label -> description -> action -> project -> user
+    Returns True if the code belongs to the user, False otherwise.
+    """
+    with get_db() as conn:
+        result = conn.execute("""
+            SELECT 1
+            FROM codes c
+            JOIN labels l ON c.label_id = l.id
+            JOIN description d ON l.description_id = d.id
+            JOIN actions a ON d.action_id = a.id
+            JOIN projects p ON a.project_id = p.id
+            WHERE c.id = ? AND p.user_id = ?
+        """, [code_id, str(user_id)]).fetchone()
+        
+        return result is not None
