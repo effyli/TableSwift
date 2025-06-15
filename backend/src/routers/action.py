@@ -10,6 +10,7 @@ from ..models.labels import Labels
 from ..models.description import Description
 from ..models.code import Code
 from ..models.file import File
+from typing import Tuple
 
 router = APIRouter(
     prefix="/action",
@@ -184,7 +185,8 @@ async def save_code(code: Code, token_data: TokenData = Depends(validate_token))
             detail="Failed to save code"
         )
     
-@router.post("/execute_code", dependencies=[Depends(validate_csrf_token)], response_model=File)
+
+@router.post("/execute_code", dependencies=[Depends(validate_csrf_token)], response_model=Tuple[File, File])
 async def execute_code_endpoint(action: Action, token_data: TokenData = Depends(validate_token)):
     """Execute code for the action."""
     try:

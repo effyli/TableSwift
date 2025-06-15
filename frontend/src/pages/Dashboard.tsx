@@ -47,7 +47,6 @@ export const Dashboard: React.FC = () => {
 
     setIsLoadingProject(true);
     projectService.getProjectDetails(projectId, actionId).then((projectData) => {
-      console.log("Project data loaded:", projectData);
       setProject(projectData);
       setFileColumns(projectData?.file?.data?.[0] ? Object.keys(projectData.file.data[0]) : []);
     }).catch((error) => {
@@ -106,12 +105,22 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  const handleFileDataUpdate = (newFile: File) => {
+  const handleFilesDataUpdate = (newFile: File, actionNewFile: File | undefined) => {
+    // Update the file data in the project and optionally in the active action
     if (project) {
-      setProject({
+      const updatedProject = {
         ...project,
         file: newFile
-      });
+      };
+
+      if (actionNewFile && project.active_action) {
+        updatedProject.active_action = {
+          ...project.active_action,
+          file: actionNewFile
+        };
+      }
+
+      setProject(updatedProject);
     }
   };
 
@@ -148,7 +157,7 @@ export const Dashboard: React.FC = () => {
                         projectAction={project?.active_action}
                         isLoadingProject={isLoadingProject}
                         onActionUpdate={handleSetActionUpdate}
-                        handleFileDataUpdate={handleFileDataUpdate}
+                        handleFileDataUpdate={handleFilesDataUpdate}
                         operations={operations}
                         fileColumns={fileColumns}
                       />
@@ -166,7 +175,7 @@ export const Dashboard: React.FC = () => {
                     <ContentView 
                       file={project?.file} 
                       projectId={projectId} 
-                      onDataUpdate={handleFileDataUpdate}
+                      onDataUpdate={handleFilesDataUpdate}
                       isLoadingProject={isLoadingProject}
                     />
                   </div>
@@ -185,7 +194,7 @@ export const Dashboard: React.FC = () => {
                         projectAction={project?.active_action}
                         isLoadingProject={isLoadingProject}
                         onActionUpdate={handleSetActionUpdate}
-                        handleFileDataUpdate={handleFileDataUpdate}
+                        handleFileDataUpdate={handleFilesDataUpdate}
                         operations={operations}
                         fileColumns={fileColumns}
                       />
@@ -201,7 +210,7 @@ export const Dashboard: React.FC = () => {
                     <ContentView 
                       file={project?.file} 
                       projectId={projectId} 
-                      onDataUpdate={handleFileDataUpdate}
+                      onDataUpdate={handleFilesDataUpdate}
                       isLoadingProject={isLoadingProject}
                     />
                   </div>

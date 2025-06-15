@@ -163,13 +163,14 @@ async def get_project_details(
         # Get actions list for project
         project.actions = await get_project_actions(project.id)
         
-        # If actionId is provided, get the active action
-        if actionId and actionId.isdigit():
+        # If actionId is provided and is a valid number (not undefined/null), get the active action
+        if actionId and actionId != "undefined" and actionId != "null" and actionId.isdigit():
             try:
                 action = await get_action(int(actionId))
                 if str(action.project_id) == str(project_id):  # Verify the action belongs to this project
                     project.active_action = action
-            except ValueError:
+            except Exception as e:
+                print(f"Warning: Failed to get action {actionId}: {str(e)}")
                 # If action not found or doesn't belong to project, ignore it
                 pass
         
@@ -185,8 +186,6 @@ async def get_project_details(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to read file data"
             )
-        
-        print(f"Project details fetched successfully for {project_id}: {project.file.data}")
         
         return project
             

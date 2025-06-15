@@ -6,6 +6,7 @@ from ..models.operation import Operation
 from ..models.labels import Labels
 from ..models.description import Description
 from ..models.file import File
+from typing import Tuple
 from .tableswift_data import get_file_data_tableswift, format_data_tableswift
 from ..database import get_db
 from .file import process_file_changes, get_file_data
@@ -52,8 +53,8 @@ def delete_action(action_id: int) -> None:
         
         if not action:
             raise ValueError("Action not found")
-        if action[0] is not None:
-            raise ValueError("Action cannot be deleted because it is not reverted yet")
+        # if action[0] is not None:
+        #     raise ValueError("Action cannot be deleted because it is not reverted yet")
 
         # First delete codes linked to this action's labels
         conn.execute("""
@@ -425,7 +426,6 @@ async def generate_action_labels(action: Action, user_id: UUID) -> Description:
         "description": action.descriptions[action.active_description].description,
         "data": data_ts
     }
-    print("Input for label generation:", input)
 
     # Call the TableSwift framework to generate labels
     # TODO add column name to input
@@ -435,7 +435,6 @@ async def generate_action_labels(action: Action, user_id: UUID) -> Description:
     output = [
         [{action.file_column: label["Input"]}, {"Label": label["Output"]}] for label in labeled_data
     ]
-    print("Generated labels:", output)
 
     saved_action = update_action(action.id, action)
 
@@ -503,7 +502,6 @@ def generate_action_code(action: Action) -> None:
         "description": action.descriptions[action.active_description].description,
         "labels": format_data_tableswift(action.descriptions[action.active_description].labels[action.active_labels].json, action.file_column),
     }
-    print("Input for code generation:", input)
 
     # Call the TableSwift framework to generate code
     ts.configure(api_key=settings.LLM_API_KEY)
@@ -515,9 +513,6 @@ def generate_action_code(action: Action) -> None:
                     num_retry=1,
                     num_iterations=1)
     
-    print("Generated code:", code)
-    print("Generated router code:", router_code)
-
     # TODO remove if generation works properly
     if not router_code:
         router_code = "def validate(input_string): return True"
@@ -561,8 +556,6 @@ def update_code(code: Code) -> None:
             SELECT id FROM codes WHERE id = ?
         """, [code.id]).fetchone()
 
-        print(existing_code)
-
         if not existing_code:
             raise ValueError("Code not found")
 
@@ -577,7 +570,7 @@ def update_code(code: Code) -> None:
         ])
 
 
-async def execute_code(action: Action, user_id: UUID) -> File:
+async def execute_code(action: Action, user_id: UUID) -> Tuple[File, File]:
     input = {
         "function": OPERATIONS[action.operation.id - 1],
         "column": action.file_column,
@@ -587,7 +580,6 @@ async def execute_code(action: Action, user_id: UUID) -> File:
         "router_code": action.descriptions[action.active_description].labels[action.active_labels].codes[action.active_code].router_code,
         "data": await get_file_data_tableswift(action.project_id, user_id, action.file_column if action.operation.id != 4 else None)
     }
-    print("Input for code execution:", input)
     
     ts.configure(api_key=settings.LLM_API_KEY)
     results, invalid_data = ts.execute_code(input["code"],
@@ -598,9 +590,6 @@ async def execute_code(action: Action, user_id: UUID) -> File:
         samples=input["labels"],
         router_code=input["router_code"]
     )
-
-    print("Execution results:", results)
-    print("Invalid data:", invalid_data)
 
     update_action(action.id, action)
 
@@ -622,19 +611,16 @@ async def execute_code(action: Action, user_id: UUID) -> File:
     # Extract new values from results
     new_values = [result['Output'] for result in results]
 
-    print("New values to be written:", new_values)
-    
     # Process file changes and generate diff
-    new_file = await process_file_changes(
+    new_file, diff_file = await process_file_changes(
         original_file_path=original_file_path,
         column_name=action.file_column,
         new_values=new_values,
         action_id=action.id,
         project_id=action.project_id
     )
-    print("New file path:", new_file)
 
-    return new_file
+    return (new_file, diff_file)
 
 def check_action_ownership(action_id: int, user_id: UUID) -> bool:
     """

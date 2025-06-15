@@ -80,9 +80,9 @@ export const actionService = {
         }
     },
 
-    async executeCode(action: Action): Promise<File> {
+    async executeCode(action: Action): Promise<[File, File]> {
         try {
-            const response = await axiosInstance.post<File>(`/action/execute_code`, action);
+            const response = await axiosInstance.post<[File, File]>(`/action/execute_code`, action);
             return response.data;
         } catch (error) {
             throw new Error('Failed to execute code');

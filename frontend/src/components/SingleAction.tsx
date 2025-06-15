@@ -16,7 +16,7 @@ interface SingleActionProps {
     projectAction: Action | null | undefined;
     isLoadingProject: boolean;
     onActionUpdate: (action: Action | null) => void;
-    handleFileDataUpdate: (file: File) => void;
+    handleFileDataUpdate: (file: File, actionFile?: File) => void;
     operations: Operation[];
     fileColumns: string[];
 }
@@ -181,8 +181,8 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
         projectAction.descriptions[projectAction.active_description].labels![projectAction.active_labels].codes![projectAction.active_code] = code;
       }
       const formattedAction = formatActionJson(JSON.parse(JSON.stringify(projectAction)));
-      const result = await actionService.executeCode(formattedAction);
-      handleFileDataUpdate(result);
+      const files = await actionService.executeCode(formattedAction);
+      handleFileDataUpdate(files[0], files[1]);
     } catch (error) {
       setError('Failed to execute code');
       console.error('Error executing code:', error);

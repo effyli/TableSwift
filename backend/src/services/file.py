@@ -217,15 +217,21 @@ async def process_file_changes(original_file_path: str, column_name: str, new_va
         file_name = os.path.basename(original_file_path)
         base_name, ext = os.path.splitext(file_name)
         
-        # Create paths for new and diff files
-        new_file_path = os.path.join(file_dir, f"{base_name}_{timestamp}{ext}")
-        diff_file_path = os.path.join(file_dir, f"{base_name}_{timestamp}_diff.csv")
+        # Reuse the original file path for the new file
+        new_file_path = original_file_path
+
+        # Find next available diff file number
+        diff_number = 1
+        while True:
+            diff_file_path = os.path.join(file_dir, f"{base_name}_diff_{diff_number}.csv")
+            if not os.path.exists(diff_file_path):
+                break   
+            diff_number += 1
 
         # Save new file
         df_new.to_csv(new_file_path, index=False)
 
         # Create diff DataFrame by comparing original and new values
-        # TODO check how this is processed to the frontend and show it properly
         diff_rows = []
         for idx in range(len(df_original)):
             old_val = df_original.at[idx, column_name]
@@ -245,13 +251,6 @@ async def process_file_changes(original_file_path: str, column_name: str, new_va
 
         # Store file information in database
         with get_db() as conn:
-            # Save new file record
-            new_file_result = conn.execute("""
-                INSERT INTO files (file_path)
-                VALUES (?)
-                RETURNING id
-            """, [new_file_path]).fetchone()
-
             # Save diff file record
             diff_file_result = conn.execute("""
                 INSERT INTO files (file_path)
@@ -259,38 +258,17 @@ async def process_file_changes(original_file_path: str, column_name: str, new_va
                 RETURNING id
             """, [diff_file_path]).fetchone()
 
-            # Update action to point to both new file and diff file
-            conn.execute("""
-                UPDATE projects 
-                SET file_id = ?
-                WHERE id = ?
-            """, [new_file_result[0], project_id])
-
             conn.execute("""
                 UPDATE actions 
                 SET file_id = ?
                 WHERE id = ?
             """, [diff_file_result[0], action_id])
 
-            conn.execute("""
-                DELETE FROM files 
-                WHERE file_path = ?
-            """, [original_file_path])
-
-        # Delete the original file and its record from the database after successful updates
-        os.remove(original_file_path)
-
         # Return the file data using get_file_data
-        return await get_file_data(new_file_path)
+        return await get_file_data(new_file_path), await get_file_data(diff_file_path)
 
     except Exception as e:
-        # If anything fails, make sure to clean up any partially created files
-        for path in [new_file_path, diff_file_path]:
-            if path and os.path.exists(path):
-                try:
-                    os.remove(path)
-                except:
-                    pass  # Ignore cleanup errors
+        print(f"Error processing file changes: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to process file changes: {str(e)}"

@@ -5,7 +5,7 @@ import { projectService } from '../services/project.service';
 interface ContentViewProps {
   file: File | null | undefined;
   projectId: string;
-  onDataUpdate: (newData: File) => void;
+  onDataUpdate: (newData: File, actionFile?: File) => void;
   isLoadingProject: boolean;
 }
 
