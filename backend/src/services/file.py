@@ -212,13 +212,12 @@ async def process_file_changes(original_file_path: str, column_name: str, new_va
         df_new[column_name] = new_values
 
         # Generate timestamp for new files
-        timestamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
         file_dir = os.path.dirname(original_file_path)
         file_name = os.path.basename(original_file_path)
-        base_name, ext = os.path.splitext(file_name)
+        base_name, _ = os.path.splitext(file_name)
         
-        # Reuse the original file path for the new file
-        new_file_path = original_file_path
+        # Save new file
+        df_new.to_csv(original_file_path, index=False)
 
         # Find next available diff file number
         diff_number = 1
@@ -227,9 +226,6 @@ async def process_file_changes(original_file_path: str, column_name: str, new_va
             if not os.path.exists(diff_file_path):
                 break   
             diff_number += 1
-
-        # Save new file
-        df_new.to_csv(new_file_path, index=False)
 
         # Create diff DataFrame by comparing original and new values
         diff_rows = []
@@ -242,12 +238,10 @@ async def process_file_changes(original_file_path: str, column_name: str, new_va
                     f'old_{column_name}': old_val
                 })
 
-        print(f"Diff rows: {diff_rows}")
         # Create diff DataFrame and save as CSV
         if diff_rows:
             df_diff = pd.DataFrame(diff_rows)
             df_diff.to_csv(diff_file_path, index=False)
-            print(f"df diff: {df_diff}")
 
         # Store file information in database
         with get_db() as conn:
@@ -265,7 +259,7 @@ async def process_file_changes(original_file_path: str, column_name: str, new_va
             """, [diff_file_result[0], action_id])
 
         # Return the file data using get_file_data
-        return await get_file_data(new_file_path), await get_file_data(diff_file_path)
+        return await get_file_data(original_file_path), await get_file_data(diff_file_path)
 
     except Exception as e:
         print(f"Error processing file changes: {str(e)}")
@@ -275,113 +269,77 @@ async def process_file_changes(original_file_path: str, column_name: str, new_va
         )
 
 
-# async def revert_file_changes(action_id: int) -> Tuple[str, str]:
-#     """
-#     Revert changes made by an action using its diff file.
-#     Returns tuple of (new_reverted_file_path, new_diff_file_path)
-#     """
-#     try:
-#         # Get the current file and diff file paths
-#         with get_db() as conn:
-#             result = conn.execute("""
-#                 SELECT f.file_path, d.file_path as diff_path
-#                 FROM actions a
-#                 JOIN files f ON a.file_id = f.id
-#                 JOIN files d ON a.diff_file_id = d.id
-#                 WHERE a.id = ?
-#             """, [action_id]).fetchone()
+async def revert_action(action_id: int) -> Optional[File]:
+    """
+    Revert changes made by an action using its diff file.
+    Restores original values from the diff file, then deletes the diff file
+    and updates the action record.
+    """
+    try:
+        # Get the action's diff file path and project file path from the database
+        with get_db() as conn:
+            action_data = conn.execute("""
+                SELECT df.file_path as diff_path, pf.file_path as project_file_path, a.file_column
+                FROM actions a
+                JOIN projects p ON a.project_id = p.id
+                JOIN files pf ON p.file_id = pf.id
+                LEFT JOIN files df ON a.file_id = df.id
+                WHERE a.id = ?
+            """, [action_id]).fetchone()
 
-#             if not result:
-#                 raise ValueError("Action, file or diff file not found")
+        if not action_data or not action_data[0]:
+            raise HTTPException(
+                status_code=404,
+                detail="Diff file not found for this action"
+            )
 
-#             current_file_path, diff_file_path = result
+        diff_path = action_data[0]
+        project_file_path = action_data[1]
+        column_name = action_data[2]
 
-#         # Load the current file
-#         df_current = pd.read_csv(current_file_path, dtype=str)
-        
-#         # Load the diff file
-#         with open(diff_file_path, 'r') as f:
-#             diff_data = json.load(f)
+        # Read the project and diff files
+        df_project = pd.read_csv(project_file_path, dtype=str)
+        df_diff = pd.read_csv(diff_path, dtype=str)
 
-#         # Create a copy for the reverted file
-#         df_reverted = df_current.copy()
-        
-#         # Apply the changes in reverse
-#         changes = diff_data['changes']
-#         column_name = diff_data['summary']['column_changed']
-        
-#         # Create a mapping of row index to old value
-#         revert_changes = {change['row_index']: change['old_value'] for change in changes}
-        
-#         # Apply the reverted changes
-#         for idx, old_value in revert_changes.items():
-#             df_reverted.at[idx, column_name] = old_value
+        # Get the old values from diff file
+        old_column_name = f'old_{column_name}'
+        new_column_name = f'new_{column_name}'
 
-#         # Generate timestamp for new files
-#         timestamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
-#         file_dir = os.path.dirname(current_file_path)
-#         file_name = os.path.basename(current_file_path)
-#         base_name, ext = os.path.splitext(file_name)
-        
-#         # Create paths for new and diff files
-#         reverted_file_path = os.path.join(file_dir, f"{base_name}_reverted_{timestamp}{ext}")
-#         new_diff_file_path = os.path.join(file_dir, f"{base_name}_reverted_{timestamp}_diff.json")
+        if old_column_name not in df_diff.columns or new_column_name not in df_diff.columns:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid diff file format"
+            )
 
-#         # Calculate new differences (should be exactly opposite of original changes)
-#         new_differences = []
-#         for change in changes:
-#             new_differences.append({
-#                 "row_index": change['row_index'],
-#                 "column": column_name,
-#                 "old_value": str(df_current.at[change['row_index'], column_name]),  # Current value becomes old
-#                 "new_value": change['old_value']  # Original old value becomes new
-#             })
+        # Create a dictionary mapping new values to old values
+        revert_map = dict(zip(df_diff[new_column_name], df_diff[old_column_name]))
 
-#         # Save new diff file
-#         with open(new_diff_file_path, 'w') as f:
-#             json.dump({
-#                 "changes": new_differences,
-#                 "summary": {
-#                     "total_rows": len(df_reverted),
-#                     "changed_rows": len(changes),
-#                     "column_changed": column_name,
-#                     "timestamp": timestamp,
-#                     "is_revert": True,
-#                     "reverted_from_diff": diff_file_path
-#                 }
-#             }, f, indent=2)
+        # Apply the revert by replacing current values with original values
+        df_project[column_name] = df_project[column_name].map(
+            lambda x: revert_map.get(str(x), x)
+        )
 
-#         # Save reverted file
-#         df_reverted.to_csv(reverted_file_path, index=False)
+        # Save the reverted project file
+        df_project.to_csv(project_file_path, index=False)
 
-#         # Store file information in database
-#         with get_db() as conn:
-#             # Save reverted file record
-#             new_file_result = conn.execute("""
-#                 INSERT INTO files (file_path, is_diff)
-#                 VALUES (?, ?)
-#                 RETURNING id
-#             """, [reverted_file_path, False]).fetchone()
+        # Delete the diff file
+        await delete_file(diff_path)
 
-#             # Save new diff file record
-#             new_diff_result = conn.execute("""
-#                 INSERT INTO files (file_path, is_diff, original_file_id)
-#                 VALUES (?, ?, ?)
-#                 RETURNING id
-#             """, [new_diff_file_path, True, new_file_result[0]]).fetchone()
+        # Update the action record to remove the file_id
+        with get_db() as conn:
+            conn.execute("""
+                UPDATE actions 
+                SET file_id = NULL
+                WHERE id = ?
+            """, [action_id])
 
-#             # Update action to point to reverted file
-#             conn.execute("""
-#                 UPDATE actions 
-#                 SET file_id = ?,
-#                     diff_file_id = ?
-#                 WHERE id = ?
-#             """, [new_file_result[0], new_diff_result[0], action_id])
+        # Return the updated file data
+        return await get_file_data(project_file_path)
 
-#         return reverted_file_path, new_diff_file_path
+    except Exception as e:
+        print(f"Error reverting action: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to revert action: {str(e)}"
+        )
 
-#     except Exception as e:
-#         raise HTTPException(
-#             status_code=500,
-#             detail=f"Failed to revert file changes: {str(e)}"
-#         )

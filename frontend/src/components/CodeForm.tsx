@@ -5,6 +5,7 @@ import { Action } from '../types/action';
 import { actionService } from '../services/action.service';
 import { MdArrowBackIos, MdArrowForwardIos, MdOutlineSaveAs } from 'react-icons/md';
 import { IoReload } from 'react-icons/io5';
+import { useModal } from '../context/ModalContext';
 
 interface CodeFormProps {
     codes: Code[];
@@ -15,6 +16,7 @@ interface CodeFormProps {
 }
 
 export const CodeForm: React.FC<CodeFormProps> = ({ codes, activeCode, isExecuted, onFieldChange, executeCode }) => {
+    const { handleModal, hideModal } = useModal();
     const [isSavingCode, setIsSavingCode] = useState(false);
     const [isExecutingCode, setIsExecutingCode] = useState(false);
     const [editableCode, setEditableCode] = useState<string>('');
@@ -88,6 +90,7 @@ export const CodeForm: React.FC<CodeFormProps> = ({ codes, activeCode, isExecute
             console.error('Error generating labels:', error);
         } finally {
             setIsExecutingCode(false);
+            hideModal();
         }
     }
 
@@ -116,7 +119,25 @@ export const CodeForm: React.FC<CodeFormProps> = ({ codes, activeCode, isExecute
                                 <button className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg' onClick={() => handleSavingCode()}>
                                     <MdOutlineSaveAs />
                                 </button>
-                                <button className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg' onClick={() => handleExecuteCode()}>
+                                <button 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleModal({
+                                            isOpen: true,
+                                            title: 'Re-execute Action',
+                                            message: 'Are you sure you want to re-execute this action? Re-executing will revert the previous execution and run the current code on the reverted data.',
+                                            primaryButton: {
+                                                label: 'Re-execute',
+                                                onClick: () => handleExecuteCode(),
+                                            },
+                                            secondaryButton: {
+                                                label: 'Cancel',
+                                                onClick: hideModal,
+                                            },
+                                        })
+                                    }}
+                                    className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg'
+                                >
                                     <IoReload />
                                 </button>
                             </div>

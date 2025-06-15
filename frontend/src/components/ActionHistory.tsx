@@ -93,23 +93,23 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ actions, onActionL
                     <td className="p-4">{new Date(action.datetime).toLocaleString()}</td>
                     <td className="p-4 text-right">
                     <button
-                    onClick={(e) => {
-                    e.stopPropagation();
-                    handleModal({
-                      isOpen: true,
-                      title: 'Delete Action',
-                      message: 'Are you sure you want to delete this action? This action cannot be undone.',
-                      primaryButton: {
-                        label: 'Delete',
-                        onClick: () => deleteAction(action.id),
-                      },
-                      secondaryButton: {
-                        label: 'Cancel',
-                        onClick: hideModal,
-                      },
-                    })
-                    }}
-                    className="text-red hover:text-red flex items-center justify-end gap-2 justify-self-center"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleModal({
+                          isOpen: true,
+                          title: 'Delete Action',
+                          message: 'Are you sure you want to delete this action? This action cannot be undone.',
+                          primaryButton: {
+                            label: 'Delete',
+                            onClick: () => deleteAction(action.id),
+                          },
+                          secondaryButton: {
+                            label: 'Cancel',
+                            onClick: hideModal,
+                          },
+                        })
+                      }}
+                      className="text-red hover:text-red flex items-center justify-end gap-2 justify-self-center"
                     >
                     <FaRegTrashAlt />
                     Delete

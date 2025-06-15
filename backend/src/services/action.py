@@ -9,7 +9,7 @@ from ..models.file import File
 from typing import Tuple
 from .tableswift_data import get_file_data_tableswift, format_data_tableswift
 from ..database import get_db
-from .file import process_file_changes, get_file_data
+from .file import process_file_changes, get_file_data, revert_action
 from uuid import UUID
 import pandas as pd
 import json
@@ -571,6 +571,13 @@ def update_code(code: Code) -> None:
 
 
 async def execute_code(action: Action, user_id: UUID) -> Tuple[File, File]:
+    # Check if the action is already executed previously, if so, it will be reverted
+    if action.file is not None:
+        result = await revert_action(action.id)
+        action.file = None
+        print(f"Reverted action {action.id}, result: {result}")
+        print(f"Reverted action: {action}")
+
     input = {
         "function": OPERATIONS[action.operation.id - 1],
         "column": action.file_column,
