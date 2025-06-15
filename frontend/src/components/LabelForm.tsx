@@ -77,10 +77,10 @@ export const LabelForm: React.FC<LabelFormProps> = ({ labels, activeLabels, sele
         }
     }
 
-    const handleGenerateCode = async () => {
+    const handleGenerateCode = () => {
         setIsLoadingGenerating(true);
         try {
-            await generateCode({
+            generateCode({
                 ...labels[activeLabels],
                 json: editableLabels
             });

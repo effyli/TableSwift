@@ -1,5 +1,6 @@
 import { Operation } from './operation';
 import { Descriptions } from './description';
+import { File } from './file';
 
 export interface ActionBase {
     id: number;

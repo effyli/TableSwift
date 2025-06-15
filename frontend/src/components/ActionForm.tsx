@@ -83,10 +83,10 @@ export const ActionForm: React.FC<ActionFormProps> = ({
         }
     };
 
-    const handleRegenerateLabels = async () => {
+    const handleRegenerateLabels = () => {
         setIsLoadingGenerating(true);
         try {
-            await generateLabels(undefined);
+            generateLabels(undefined);
         }
         catch (err) {
             console.error('Error generating labels:', err);
