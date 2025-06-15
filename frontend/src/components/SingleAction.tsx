@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Action } from '../types/action';
 import { Operation } from '../types/operation';
+import { Labels } from '../types/labels';
+import { Code } from '../types/code';
 import { File } from '../types/file';
 import { actionService } from '../services/action.service';
 import { ActionForm } from './ActionForm';
@@ -27,10 +29,6 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [showAffectedRows, setShowAffectedRows] = useState<boolean>(false);
-
-  useEffect(() => {
-    console.log(projectAction)
-  }, [projectAction]);
 
   useEffect(() => {
     scrollToBottom();
@@ -88,11 +86,6 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
       projectAction.active_code = newLabel?.codes?.length ? newLabel.codes.length - 1 : 0;
     }
 
-    console.log({
-      ...projectAction,
-      [field]: value
-    })
-
     onActionUpdate({
       ...projectAction,
       [field]: value
@@ -119,11 +112,11 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
     }
 
     try { 
-      // Make a copy of action to avoid mutating the original object
       if (description) {
         projectAction.descriptions.push({ description: description })
         projectAction.active_description = projectAction.descriptions.length - 1;
       }
+      // Make a copy of action to avoid mutating the original object
       const formattedAction = formatActionJson(JSON.parse(JSON.stringify(projectAction)));
       const updatedDescription = await actionService.generateLabels(formattedAction);
         // Add the generated labels in the active description of the action
@@ -144,13 +137,17 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
   }
 
   // Handle generate code
-  const generateCode = async () => {
+  const generateCode = async (labels: Labels | undefined) => {
     if (!projectAction) {
       setError('Please fill in all fields');
       return;
     }
 
     try {
+      if (labels) {
+        // If labels are provided, update the active labels
+        projectAction.descriptions[projectAction.active_description].labels![projectAction.active_labels] = labels;
+      }
       const formattedAction = formatActionJson(JSON.parse(JSON.stringify(projectAction)));
       const codeResult = await actionService.generateCode(formattedAction);
 
@@ -172,16 +169,19 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
     }
   };
 
-  const executeCode = async () => {
+  const executeCode = async (code: Code | undefined) => {
     if (!projectAction) {
       setError('Please fill in all fields');
       return;
     }
 
     try {
+      if (code) {
+        // If code is provided, update the active code
+        projectAction.descriptions[projectAction.active_description].labels![projectAction.active_labels].codes![projectAction.active_code] = code;
+      }
       const formattedAction = formatActionJson(JSON.parse(JSON.stringify(projectAction)));
       const result = await actionService.executeCode(formattedAction);
-      console.log('Execution result:', result);
       handleFileDataUpdate(result);
     } catch (error) {
       setError('Failed to execute code');
@@ -259,12 +259,13 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
                   />
 
                   {projectAction.descriptions[projectAction.active_description].labels![projectAction.active_labels]!.codes!.length > 0 && (
-                    <CodeForm 
-                      codes={projectAction?.descriptions[projectAction.active_description]?.labels?.[projectAction.active_labels]?.codes || []} 
-                      activeCode={projectAction?.active_code || 0}
-                      onFieldChange={handleActionChange}
-                      executeCode={executeCode}
-                    />
+                  <CodeForm 
+                    codes={projectAction?.descriptions[projectAction.active_description]?.labels?.[projectAction.active_labels]?.codes || []} 
+                    activeCode={projectAction?.active_code || 0}
+                    isExecuted={!!projectAction?.file}
+                    onFieldChange={handleActionChange}
+                    executeCode={executeCode}
+                  />
                   )}
                 </>
               )}

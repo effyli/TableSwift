@@ -146,7 +146,7 @@ export const ActionForm: React.FC<ActionFormProps> = ({
                 </label>
                 <textarea
                     ref={descriptionRef}
-                    value={descriptionDisabled ? descriptions?.[activeDescription]?.description || '' : adjustedDescription}
+                    value={descriptionDisabled && !isLoadingGenerating ? descriptions?.[activeDescription]?.description || '' : adjustedDescription}
                     disabled={descriptionDisabled}
                     onChange={(e) => handleDescriptionChange(e)}
                     className={`w-full ${descriptionDisabled ? 'bg-black-light border border-black-light' : 'bg-black-lighter border border-black-lighter'} rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500 max-h-[300px] min-h-[100px]`}
@@ -155,7 +155,12 @@ export const ActionForm: React.FC<ActionFormProps> = ({
             </div>
 
             <div className='mt-1'>
-                {descriptionDisabled ? (
+                {
+                isLoadingGenerating ? (
+                    <div className='flex items-center'>
+                        <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-500 border-t-transparent"></div>
+                    </div>
+                ) : descriptionDisabled ? (
                     <div className='flex justify-between items-center'>
                         <div className='flex items-center'>
                             <button className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg' onClick={() => openDescriptionEditor()}>

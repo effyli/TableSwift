@@ -420,7 +420,7 @@ async def generate_action_labels(action: Action, user_id: UUID) -> Description:
     data_ts = await get_file_data_tableswift(action.project_id, user_id, action.file_column if action.operation.id != 4 else None)
 
     input = {
-        "function": OPERATIONS[action.operation.id],
+        "function": OPERATIONS[action.operation.id - 1],
         "column": action.file_column,
         "description": action.descriptions[action.active_description].description,
         "data": data_ts
@@ -498,7 +498,7 @@ def update_labels(labels: Labels) -> None:
 def generate_action_code(action: Action) -> None:
     """Generate code for an action."""
     input = {
-        "function": OPERATIONS[action.operation.id],
+        "function": OPERATIONS[action.operation.id - 1],
         "column": action.file_column,
         "description": action.descriptions[action.active_description].description,
         "labels": format_data_tableswift(action.descriptions[action.active_description].labels[action.active_labels].json, action.file_column),
@@ -579,7 +579,7 @@ def update_code(code: Code) -> None:
 
 async def execute_code(action: Action, user_id: UUID) -> File:
     input = {
-        "function": OPERATIONS[action.operation.id],
+        "function": OPERATIONS[action.operation.id - 1],
         "column": action.file_column,
         "description": action.descriptions[action.active_description].description,
         "labels": format_data_tableswift(action.descriptions[action.active_description].labels[action.active_labels].json, action.file_column),
@@ -601,6 +601,8 @@ async def execute_code(action: Action, user_id: UUID) -> File:
 
     print("Execution results:", results)
     print("Invalid data:", invalid_data)
+
+    update_action(action.id, action)
 
     # Get the file path for this action
     with get_db() as conn:

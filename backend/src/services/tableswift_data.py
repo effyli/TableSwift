@@ -32,7 +32,7 @@ async def get_file_data_tableswift(project_id: UUID, user_id: UUID, column: Opti
         print(f"Reading file from path: {file_path}")
 
         # Read the CSV file
-        df = pd.read_csv(file_path)
+        df = pd.read_csv(file_path, dtype=str)
         
         if column:
             # Check if column exists

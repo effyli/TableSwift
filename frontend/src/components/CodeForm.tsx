@@ -3,17 +3,18 @@ import { Code } from '../types/code';
 import { Editor } from '@monaco-editor/react';
 import { Action } from '../types/action';
 import { actionService } from '../services/action.service';
-import { MdArrowBackIos, MdArrowForwardIos } from 'react-icons/md';
+import { MdArrowBackIos, MdArrowForwardIos, MdOutlineSaveAs } from 'react-icons/md';
 import { IoReload } from 'react-icons/io5';
 
 interface CodeFormProps {
     codes: Code[];
     activeCode: number;
+    isExecuted: boolean;
     onFieldChange: (field: keyof Action, value: any) => void;
-    executeCode: () => void;
+    executeCode: (code: Code | undefined) => void;
 }
 
-export const CodeForm: React.FC<CodeFormProps> = ({ codes, activeCode, onFieldChange, executeCode }) => {
+export const CodeForm: React.FC<CodeFormProps> = ({ codes, activeCode, isExecuted, onFieldChange, executeCode }) => {
     const [isSavingCode, setIsSavingCode] = useState(false);
     const [isExecutingCode, setIsExecutingCode] = useState(false);
     const [editableCode, setEditableCode] = useState<string>('');
@@ -38,7 +39,14 @@ export const CodeForm: React.FC<CodeFormProps> = ({ codes, activeCode, onFieldCh
 
     const handleCodeChange = (value: string | undefined) => {
         if (value !== undefined) {
-            setEditableCode(value);
+            const newCode = [ ...codes ]
+            newCode[activeCode] = {
+                ...newCode[activeCode],
+                code: value
+            };
+
+            setEditableCode(newCode[activeCode].code);
+            // onFieldChange('code', newCode[activeCode]);
 
             setUnsavedChanges(prev => ({
                 ...prev,
@@ -48,12 +56,15 @@ export const CodeForm: React.FC<CodeFormProps> = ({ codes, activeCode, onFieldCh
     }
 
     const handleSavingCode = async () => {
+        if (!codes?.[0]) return;
         setIsSavingCode(true);
         try {
-            const result = await actionService.saveCode({
+
+            const newCode: Code = {
                 ...codes[activeCode],
                 code: editableCode
-            });
+            }
+            await actionService.saveCode(newCode);
             // Clear unsaved changes for this version after successful save
             setUnsavedChanges(prev => {
                 const newState = { ...prev };
@@ -69,7 +80,10 @@ export const CodeForm: React.FC<CodeFormProps> = ({ codes, activeCode, onFieldCh
     const handleExecuteCode = () => {
         setIsExecutingCode(true)
         try {
-            executeCode();
+            executeCode({
+                ...codes[activeCode],
+                code: editableCode
+            });
         } catch (error) {
             console.error('Error generating labels:', error);
         } finally {
@@ -96,11 +110,30 @@ export const CodeForm: React.FC<CodeFormProps> = ({ codes, activeCode, onFieldCh
 
             <div className="mt-4 flex gap-x-4 justify-between items-center">
                 {
-                    false ? (
-                        <div className='flex items-center'>
-                            <button className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg' onClick={() => handleExecuteCode()}>
-                                <IoReload />
-                            </button>
+                    isExecuted ? (
+                        <div className='w-full flex justify-between items-center'>
+                            <div className='flex items-center'>
+                                <button className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg' onClick={() => handleSavingCode()}>
+                                    <MdOutlineSaveAs />
+                                </button>
+                                <button className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg' onClick={() => handleExecuteCode()}>
+                                    <IoReload />
+                                </button>
+                            </div>
+
+                            {
+                                (codes.length > 1) && (
+                                    <div className='flex items-center gap-2'>
+                                        <button onClick={() => handleSwitchCode('prev')} disabled={activeCode === 0}>
+                                            <MdArrowBackIos />
+                                        </button>
+                                        <span>{activeCode + 1}/{codes.length}</span>
+                                        <button onClick={() => handleSwitchCode('next')} disabled={activeCode === codes.length - 1}>
+                                            <MdArrowForwardIos />
+                                        </button>
+                                    </div>
+                                )
+                            }
                         </div>
                     ) : (
                         <div className='flex items-center gap-x-4'>
@@ -117,19 +150,6 @@ export const CodeForm: React.FC<CodeFormProps> = ({ codes, activeCode, onFieldCh
                                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                             >
                                 {isExecutingCode ? 'Executing...' : 'Execute Code'}
-                            </button>
-                        </div>
-                    )
-                }
-                {
-                    (codes.length > 1) && (
-                        <div className='flex items-center gap-2'>
-                            <button onClick={() => handleSwitchCode('prev')} disabled={activeCode === 0}>
-                                <MdArrowBackIos />
-                            </button>
-                            <span>{activeCode + 1}/{codes.length}</span>
-                            <button onClick={() => handleSwitchCode('next')} disabled={activeCode === codes.length - 1}>
-                                <MdArrowForwardIos />
                             </button>
                         </div>
                     )
