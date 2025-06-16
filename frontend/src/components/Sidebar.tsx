@@ -37,7 +37,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 const projectsList = await projectService.getProjects();
                 setProjects(projectsList);
             } catch (error) {
-                console.error('Failed to fetch projects:', error);
+                alert('Failed to load projects. Please try again.');
             } finally {
                 setIsLoadingProjects(false);
             }
@@ -61,7 +61,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }
             navigate(`/dashboard/${result.id}`);
         } catch (error) {
-            console.error('Upload error:', error);
+            alert('Failed to upload file. Please try again.');
             setUploadError(error instanceof Error ? error.message : 'Failed to upload file');
         } finally {
             setIsUploading(false);
@@ -73,9 +73,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             await projectService.deleteProject(projectId);
             setProjects(prevProjects => prevProjects.filter(p => p.id !== projectId));
             navigate('/dashboard');
-            hideModal();
         } catch (error) {
-            console.error('Failed to delete project:', error);
+            alert('Failed to delete project. Please try again.');
+        } finally {
+            hideModal();
         }
     };
 

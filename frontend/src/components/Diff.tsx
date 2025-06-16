@@ -31,8 +31,7 @@ export const DiffViewer: React.FC<DiffProps> = ({ action, file, handleActionChan
       });
       setIsSearchActive(true);
     } catch (error) {
-      console.error('Failed to search:', error);
-      // TODO: Show error message to user
+      alert('Search failed. Please try again.');
     } finally {
       setIsSearching(false);
       setPrevSearchTerm(searchTerm);
@@ -54,7 +53,7 @@ export const DiffViewer: React.FC<DiffProps> = ({ action, file, handleActionChan
           total_rows: result.total_rows
         });
       } catch (error) {
-        console.error('Failed to reset data:', error);
+        alert('Failed to reset data. Please try again.');
       }
     };
 

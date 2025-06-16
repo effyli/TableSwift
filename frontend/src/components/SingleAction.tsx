@@ -45,7 +45,6 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
         
       }).catch((error) => {
         setError('Failed to load action');
-        console.error('Error loading action:', error);
       }).finally(() => {
         setIsLoading(false);
       });

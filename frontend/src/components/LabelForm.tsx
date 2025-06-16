@@ -71,7 +71,7 @@ export const LabelForm: React.FC<LabelFormProps> = ({ labels, activeLabels, sele
             await actionService.saveLabels(newLabels);
             // TODO success message
         } catch (error) {
-            console.error('Error saving labels:', error);
+            alert('Failed to save labels. Please try again.');
         } finally {
             setIsSavingLabels(false);
         }
@@ -85,7 +85,7 @@ export const LabelForm: React.FC<LabelFormProps> = ({ labels, activeLabels, sele
                 json: editableLabels
             });
         } catch (error) {
-            console.error('Error generating labels:', error);
+            alert('Failed to generate labels. Please try again.');
         } finally {
             setIsLoadingGenerating(false);
         }

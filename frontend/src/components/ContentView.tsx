@@ -33,8 +33,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ file, projectId, onDat
       });
       setIsSearchActive(true);
     } catch (error) {
-      console.error('Failed to search:', error);
-      // TODO: Show error message to user
+      alert('Search failed. Please try again.');
     } finally {
       setIsSearching(false);
       setPrevSearchTerm(searchTerm);
@@ -67,8 +66,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ file, projectId, onDat
         total_rows: result.total_rows
       });
     } catch (error) {
-      console.error('Failed to load more rows:', error);
-      // TODO: Show error message to user
+      alert('Failed to load more rows. Please try again.');
     } finally {
       setIsLoadingMore(false);
     }
@@ -89,7 +87,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ file, projectId, onDat
         total_rows: result.total_rows
       });
     } catch (error) {
-      console.error('Failed to reset data:', error);
+      alert('Failed to reset data. Please try again.');
     }
   };
   

@@ -74,7 +74,7 @@ export const CodeForm: React.FC<CodeFormProps> = ({ codes, activeCode, isExecute
                 return newState;
             });
         } catch (error) {
-            console.error('Failed to save code:', error);
+            alert('Failed to save code. Please try again.');
         }
         setIsSavingCode(false);
     }
@@ -87,7 +87,7 @@ export const CodeForm: React.FC<CodeFormProps> = ({ codes, activeCode, isExecute
                 code: editableCode
             });
         } catch (error) {
-            console.error('Error generating labels:', error);
+            alert('Failed to execute code. Please try again.');
         } finally {
             setIsExecutingCode(false);
             hideModal();

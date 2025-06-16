@@ -33,7 +33,6 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ actions, onActionL
       navigate(`/dashboard/${projectId}/${newAction.id}`);
     } catch (error) {
       setError('Failed to create action');
-      console.error('Error creating action:', error);
     }
   };
 
@@ -47,7 +46,6 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ actions, onActionL
       onActionListUpdate(updatedActions);
     } catch (error) {
       setError('Failed to delete action');
-      console.error('Error deleting action:', error);
     } finally {
       hideModal();
     }
@@ -69,7 +67,6 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ actions, onActionL
       onActionListUpdate(updatedActions, updatedProjectFile || undefined);
     } catch (error) {
       setError('Failed to revert action');
-      console.error('Error reverting action:', error);
     } finally {
       hideModal();
     }

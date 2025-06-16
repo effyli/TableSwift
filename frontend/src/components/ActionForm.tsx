@@ -76,7 +76,7 @@ export const ActionForm: React.FC<ActionFormProps> = ({
             await generateLabels(adjustedDescription);
         }
         catch (err) {
-            console.error('Error generating labels:', err);
+            alert('Error generating labels. Please try again.');
             setDescriptionDisabled(false);
         } finally {
             setIsLoadingGenerating(false);
@@ -89,7 +89,7 @@ export const ActionForm: React.FC<ActionFormProps> = ({
             generateLabels(undefined);
         }
         catch (err) {
-            console.error('Error generating labels:', err);
+            alert('Error regenerating labels. Please try again.');
         } finally {
             setIsLoadingGenerating(false);
         }
