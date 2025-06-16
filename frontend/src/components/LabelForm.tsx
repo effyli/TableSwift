@@ -235,20 +235,6 @@ export const LabelForm: React.FC<LabelFormProps> = ({ labels, activeLabels, sele
                                         <IoReload />
                                     </button>
                                 </div>
-
-                                {
-                                    (labels && labels.length > 1) && (
-                                        <div className='flex items-center gap-2'>
-                                            <button onClick={() => handleSwitchLabels('prev')} disabled={activeLabels === 0}>
-                                                <MdArrowBackIos />
-                                            </button>
-                                            <span>{activeLabels + 1}/{labels?.length}</span>
-                                            <button onClick={() => handleSwitchLabels('next')} disabled={labels && activeLabels === labels.length - 1}>
-                                                <MdArrowForwardIos />
-                                            </button>
-                                        </div>
-                                    )
-                                }
                             </div>
                         ) : (
                             <div className='flex items-center gap-x-4'>
@@ -265,6 +251,19 @@ export const LabelForm: React.FC<LabelFormProps> = ({ labels, activeLabels, sele
                                     className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                                 >
                                     {isLoadingGenerating ? 'Generating...' : 'Generate Code'}
+                                </button>
+                            </div>
+                        )
+                    }
+                    {
+                        (labels && labels.length > 1) && (
+                            <div className='flex items-center gap-2'>
+                                <button onClick={() => handleSwitchLabels('prev')} disabled={activeLabels === 0}>
+                                    <MdArrowBackIos />
+                                </button>
+                                <span>{activeLabels + 1}/{labels?.length}</span>
+                                <button onClick={() => handleSwitchLabels('next')} disabled={labels && activeLabels === labels.length - 1}>
+                                    <MdArrowForwardIos />
                                 </button>
                             </div>
                         )

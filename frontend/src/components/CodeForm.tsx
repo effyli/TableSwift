@@ -141,20 +141,6 @@ export const CodeForm: React.FC<CodeFormProps> = ({ codes, activeCode, isExecute
                                     <IoReload />
                                 </button>
                             </div>
-
-                            {
-                                (codes.length > 1) && (
-                                    <div className='flex items-center gap-2'>
-                                        <button onClick={() => handleSwitchCode('prev')} disabled={activeCode === 0}>
-                                            <MdArrowBackIos />
-                                        </button>
-                                        <span>{activeCode + 1}/{codes.length}</span>
-                                        <button onClick={() => handleSwitchCode('next')} disabled={activeCode === codes.length - 1}>
-                                            <MdArrowForwardIos />
-                                        </button>
-                                    </div>
-                                )
-                            }
                         </div>
                     ) : (
                         <div className='flex items-center gap-x-4'>
@@ -171,6 +157,19 @@ export const CodeForm: React.FC<CodeFormProps> = ({ codes, activeCode, isExecute
                                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                             >
                                 {isExecutingCode ? 'Executing...' : 'Execute Code'}
+                            </button>
+                        </div>
+                    )
+                }
+                {
+                    (codes.length > 1) && (
+                        <div className='flex items-center gap-2'>
+                            <button onClick={() => handleSwitchCode('prev')} disabled={activeCode === 0}>
+                                <MdArrowBackIos />
+                            </button>
+                            <span>{activeCode + 1}/{codes.length}</span>
+                            <button onClick={() => handleSwitchCode('next')} disabled={activeCode === codes.length - 1}>
+                                <MdArrowForwardIos />
                             </button>
                         </div>
                     )

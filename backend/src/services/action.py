@@ -53,8 +53,8 @@ def delete_action(action_id: int) -> None:
         
         if not action:
             raise ValueError("Action not found")
-        # if action[0] is not None:
-        #     raise ValueError("Action cannot be deleted because it is not reverted yet")
+        if action[0] is not None:
+            raise ValueError("Action cannot be deleted because it is not reverted yet")
 
         # First delete codes linked to this action's labels
         conn.execute("""

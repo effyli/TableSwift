@@ -51,6 +51,7 @@ export const Dashboard: React.FC = () => {
       setFileColumns(projectData?.file?.data?.[0] ? Object.keys(projectData.file.data[0]) : []);
     }).catch((error) => {
       console.error('Failed to load project:', error);
+      navigate('/dashboard'); // Redirect to dashboard if project not found
     }).finally(() => {
       setIsLoadingProject(false);
     

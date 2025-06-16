@@ -12,6 +12,7 @@ import traceback
 from uuid import UUID
 from fastapi_cache import FastAPICache
 from fastapi_cache.decorator import cache
+import os
 
 
 router = APIRouter(
@@ -111,21 +112,32 @@ async def delete_project_endpoint(project_id: UUID, token_data: TokenData = Depe
         # First, get the project to verify ownership and get file path
         project = await get_user_project(project_id, token_data.user_id)
         
+        # Check if file exists before attempting deletion
+        if not project.file or not project.file.file_path:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Project file information is missing"
+            )
+
+        if not os.path.exists(project.file.file_path):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Project file not found on disk"
+            )
+
         try:
             # Clear cache for the project
             await FastAPICache.clear(namespace="{project_id}")
 
-            # First try to delete the file
+            delete_project(project.id, token_data.user_id)
+
+            # If project deletion was successful, delete the file
             print(f"Attempting to delete file at {project.file.file_path}")
             await delete_file(project.file.file_path)
             
-            # If file deletion successful, delete from database
-            delete_project(project.id, token_data.user_id)
-
             return {"status": "success", "message": "Project and associated files deleted successfully"}
             
         except Exception as e:
-            # If anything fails during deletion, raise an error
             print(f"Error during project deletion: {str(e)}")
             print(traceback.format_exc())
             raise HTTPException(

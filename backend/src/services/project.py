@@ -86,6 +86,28 @@ async def get_user_project(project_id: UUID, user_id: UUID) -> Project:
 def delete_project(project_id: UUID, user_id: UUID) -> bool:
     with get_db() as conn:
         try:
+            # Check if any action has a non-null file_id
+            has_active_actions = conn.execute("""
+                SELECT COUNT(*) FROM actions
+                WHERE project_id = ? AND file_id IS NOT NULL
+            """, [project_id]).fetchone()[0]
+            
+            if has_active_actions > 0:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Cannot delete project with active actions. Please revert all actions first."
+                )
+
+            # Delete all actions
+            action_ids = conn.execute("""
+                SELECT id FROM actions
+                WHERE project_id = ?
+            """, [project_id]).fetchall()
+            action_ids = [action_id[0] for action_id in action_ids]
+
+            for action_id in action_ids:
+                delete_action(action_id)
+
             file_result = conn.execute("""
                 DELETE FROM files
                 WHERE id = (
@@ -96,16 +118,6 @@ def delete_project(project_id: UUID, user_id: UUID) -> bool:
             """, [project_id, user_id])
             if file_result.rowcount == 0:
                 raise HTTPException(status_code=404, detail="File not found")
-            
-            # Delete all actions
-            action_ids = conn.execute("""
-                SELECT id FROM actions
-                WHERE project_id = ?
-            """, [project_id]).fetchall()
-            action_ids = [action_id[0] for action_id in action_ids]
-
-            for action_id in action_ids:
-                delete_action(action_id)
 
             # Then delete the project
             project_result = conn.execute("""
