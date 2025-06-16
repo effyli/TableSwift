@@ -99,11 +99,25 @@ export const Dashboard: React.FC = () => {
   const handleActionListUpdate = (actions: ActionBase[] | null, projectFile: File | undefined) => {
     // Update the action list in the project when an action is added or deleted
     if (project) {
-      setProject({
-        ...project,
-        actions: actions || [],
-        ...(projectFile && { file: projectFile })
-      });
+      if (projectFile) {
+        // Update project file and delete file from active action if projectFile is provided and thus an action is reverted
+        const active_action = project.active_action ? {
+          ...project.active_action,
+          file: undefined
+        } : null;
+
+        setProject({
+          ...project,
+          actions: actions || [],
+          file: projectFile,
+          active_action
+        });
+      } else {
+        setProject({
+          ...project,
+          actions: actions || [],
+        });
+      }
     }
   };
 
@@ -120,6 +134,10 @@ export const Dashboard: React.FC = () => {
           ...project.active_action,
           file: actionNewFile
         };
+        // Update the file in the actions list for the active action
+        updatedProject.actions = updatedProject.actions.map(a => 
+          a.id === project.active_action?.id ? { ...a, file: actionNewFile } : a
+        );
       }
 
       setProject(updatedProject);
