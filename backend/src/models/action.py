@@ -13,13 +13,13 @@ class ActionBase(BaseModel):
     datetime: datetime
     operation: Optional[Operation] = None
     file_column: Optional[str] = None
+    file: Optional[File] = None
 
 class Action(ActionBase):
     active_description: int = 0
     active_labels: int = 0
     active_code: int = 0
     descriptions: list[Description] = []
-    file: Optional[File] = None
 
     class Config:
         from_attributes = True

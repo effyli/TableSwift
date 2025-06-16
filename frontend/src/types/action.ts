@@ -8,6 +8,7 @@ export interface ActionBase {
     datetime: string;
     operation?: Operation;
     file_column?: string;
+    file?: File;
 }
 
 export interface Action extends ActionBase {
@@ -15,7 +16,6 @@ export interface Action extends ActionBase {
     active_labels: number;
     active_code: number;
     descriptions: Descriptions[];
-    file?: File;
 }
 
 export interface ActionCreate {

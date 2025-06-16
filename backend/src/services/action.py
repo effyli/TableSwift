@@ -184,9 +184,12 @@ async def get_project_actions(project_id: UUID) -> list[ActionBase]:
                 a.datetime, 
                 a.operation_id,
                 o.name AS operation_name,
-                a.file_column
+                a.file_column,
+                a.file_id,
+                f.file_path
             FROM actions a
             LEFT JOIN operations o ON a.operation_id = o.id
+            LEFT JOIN files f ON a.file_id = f.id
             WHERE a.project_id = ?
             ORDER BY a.datetime DESC
         """, [str(project_id)]).fetchall()
@@ -197,7 +200,8 @@ async def get_project_actions(project_id: UUID) -> list[ActionBase]:
                 project_id=row[1],
                 datetime=row[2],
                 operation=Operation(id=row[3], name=row[4]) if row[3] else None,
-                file_column=row[5]
+                file_column=row[5],
+                file=File(file_path=row[7]) if row[6] else None
             )
             for row in results
         ]

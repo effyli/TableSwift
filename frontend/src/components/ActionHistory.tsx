@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ActionBase } from '../types/action';
+import { File } from '../types/file';
 import { actionService } from '../services/action.service';
 import { useModal } from '../context/ModalContext';
 
 import { FaRegTrashAlt } from "react-icons/fa";
+import { GrRevert } from "react-icons/gr";
 
 interface ActionHistoryProps {
   actions: ActionBase[] | null | undefined;
-  onActionListUpdate: (actions: ActionBase[] | null) => void;
+  onActionListUpdate: (actions: ActionBase[] | null, projectFile?: File) => void;
+  handleFileDataUpdate: (file: File, actionFile?: File) => void;
   isLoadingProject: boolean;
 }
 
-export const ActionHistory: React.FC<ActionHistoryProps> = ({ actions, onActionListUpdate, isLoadingProject }) => {
+export const ActionHistory: React.FC<ActionHistoryProps> = ({ actions, onActionListUpdate, handleFileDataUpdate, isLoadingProject }) => {
   const [error, setError] = useState<string | null>(null);
 
   const { handleModal, hideModal } = useModal();
@@ -45,6 +48,28 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ actions, onActionL
     } catch (error) {
       setError('Failed to delete action');
       console.error('Error deleting action:', error);
+    } finally {
+      hideModal();
+    }
+  };
+
+  const handleRevertAction = async (actionId: number) => {
+    if (!projectId) return;
+    try {
+      const updatedProjectFile = await actionService.revertAction(actionId);
+
+      // Set action file to null
+      const updatedActions = actions?.map((action: ActionBase) =>
+        action.id === actionId ? {
+          ...action,
+          file: undefined,
+        } : action
+      ) || null;
+
+      onActionListUpdate(updatedActions, updatedProjectFile || undefined);
+    } catch (error) {
+      setError('Failed to revert action');
+      console.error('Error reverting action:', error);
     } finally {
       hideModal();
     }
@@ -92,28 +117,55 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ actions, onActionL
                     <td className="p-4">{action.file_column || '(Not set)'}</td>
                     <td className="p-4">{new Date(action.datetime).toLocaleString()}</td>
                     <td className="p-4 text-right">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleModal({
-                          isOpen: true,
-                          title: 'Delete Action',
-                          message: 'Are you sure you want to delete this action? This action cannot be undone.',
-                          primaryButton: {
-                            label: 'Delete',
-                            onClick: () => deleteAction(action.id),
-                          },
-                          secondaryButton: {
-                            label: 'Cancel',
-                            onClick: hideModal,
-                          },
-                        })
-                      }}
-                      className="text-red hover:text-red flex items-center justify-end gap-2 justify-self-center"
-                    >
-                    <FaRegTrashAlt />
-                    Delete
-                    </button>
+                    {
+                      action.file ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleModal({
+                              isOpen: true,
+                              title: 'Revert Action',
+                              message: 'Are you sure you want to revert this action? This action cannot be undone.',
+                              primaryButton: {
+                                label: 'Revert',
+                                onClick: () => handleRevertAction(action.id),
+                              },
+                              secondaryButton: {
+                                label: 'Cancel',
+                                onClick: hideModal,
+                              },
+                            })
+                          }}
+                          className="text-red hover:text-red flex items-center justify-end gap-2 justify-self-center"
+                        >
+                          <GrRevert />
+                          Revert
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleModal({
+                              isOpen: true,
+                              title: 'Delete Action',
+                              message: 'Are you sure you want to delete this action? This action cannot be undone.',
+                              primaryButton: {
+                                label: 'Delete',
+                                onClick: () => deleteAction(action.id),
+                              },
+                              secondaryButton: {
+                                label: 'Cancel',
+                                onClick: hideModal,
+                              },
+                            })
+                          }}
+                          className="text-red hover:text-red flex items-center justify-end gap-2 justify-self-center"
+                        >
+                          <FaRegTrashAlt />
+                          Delete
+                        </button>
+                      )
+                    }
                     </td>
                   </tr>
                   ))}

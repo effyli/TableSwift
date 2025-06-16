@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from ..models.action import Action, ActionCreate, ActionBase
 from ..models.user import TokenData
 from ..services.action import create_action, get_action, update_action, delete_action, generate_action_labels, update_labels, generate_action_code, update_code, execute_code, check_action_ownership, check_label_ownership, check_code_ownership
-from ..services.file import get_file_data, search_file_data
+from ..services.file import get_file_data, search_file_data, revert_action
 from ..dependencies import validate_token
 from ..dependencies.csrf import validate_csrf_token
 import traceback
@@ -10,7 +10,7 @@ from ..models.labels import Labels
 from ..models.description import Description
 from ..models.code import Code
 from ..models.file import File
-from typing import Tuple
+from typing import Tuple, Optional
 
 router = APIRouter(
     prefix="/action",
@@ -74,6 +74,32 @@ async def update_single_action(action_id: int, action: Action, token_data: Token
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update action"
+        )
+    
+@router.post("/{action_id}/revert", response_model=Optional[File], dependencies=[Depends(validate_csrf_token)])
+async def revert_single_action(action_id: int, token_data: TokenData = Depends(validate_token)):
+    """Revert an action to its previous state."""
+    try:
+        if not check_action_ownership(action_id, token_data.user_id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to access this action"
+            )
+
+        return await revert_action(action_id)
+    except ValueError as e:
+        print(f"Error in revert_single_action: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        print(f"Error in revert_single_action: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to revert action"
         )
     
 @router.delete("/{action_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(validate_csrf_token)])

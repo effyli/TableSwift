@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Split from 'react-split'
 import { Sidebar } from '../components/Sidebar';
@@ -95,12 +95,13 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  const handleActionListUpdate = (actions: ActionBase[] | null) => {
+  const handleActionListUpdate = (actions: ActionBase[] | null, projectFile: File | undefined) => {
     // Update the action list in the project when an action is added or deleted
     if (project) {
       setProject({
         ...project,
-        actions: actions || []
+        actions: actions || [],
+        ...(projectFile && { file: projectFile })
       });
     }
   };
@@ -165,6 +166,7 @@ export const Dashboard: React.FC = () => {
                       <ActionHistory
                         actions={project?.actions}
                         onActionListUpdate={handleActionListUpdate}
+                        handleFileDataUpdate={handleFilesDataUpdate}
                         isLoadingProject={isLoadingProject}
                       />
                     )}
@@ -202,6 +204,7 @@ export const Dashboard: React.FC = () => {
                       <ActionHistory
                         actions={project?.actions}
                         onActionListUpdate={handleActionListUpdate}
+                        handleFileDataUpdate={handleFilesDataUpdate}
                         isLoadingProject={isLoadingProject}
                       />
                     )}

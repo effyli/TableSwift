@@ -44,6 +44,15 @@ export const actionService = {
         }
     },
 
+    async revertAction(actionId: number): Promise<File | null> {
+        try {
+            const response = await axiosInstance.post<File | null>(`/action/${actionId}/revert`);
+            return response.data;
+        } catch (error) {
+            throw new Error('Failed to revert action');
+        }
+    },
+
     async generateLabels(action: Action): Promise<Descriptions> {
         try {
             const response = await axiosInstance.post<Descriptions>(`/action/generate_labels`, action);
