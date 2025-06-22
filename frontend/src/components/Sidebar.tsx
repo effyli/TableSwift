@@ -65,6 +65,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             setUploadError(error instanceof Error ? error.message : 'Failed to upload file');
         } finally {
             setIsUploading(false);
+            // Reset the file input
+            const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+            if (fileInput) fileInput.value = '';
         }
     };
 
