@@ -27,7 +27,9 @@ The TableSwift interface is a human-in-the-loop solution for wrangling csv files
 
 Here's a quick demo of the interface:
 
-https://github.com/toineenzo/table-swift/assets/interface_demo.mov
+
+https://github.com/user-attachments/assets/d0a9d00d-f962-4442-b85b-ab8fd028c7f6
+
 
 
 
