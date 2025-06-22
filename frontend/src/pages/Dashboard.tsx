@@ -164,14 +164,14 @@ export const Dashboard: React.FC = () => {
         />
 
         {/* Main content area */}
-        <div className="flex flex-1 flex-col lg:flex-row min-w-0">
+        <div className="flex flex-1 flex-col lg:flex-row min-w-0 h-full">
           {projectId ? (
             <>
               {isMobile ? (
                 // Mobile view - switch between views
                 <>
                   {/* Action History or Single Action - hidden on mobile when content view is active */}
-                  <div className={`${activeView === 'actions' ? 'flex' : 'hidden'} flex-col flex-1`}>
+                  <div className={`${activeView === 'actions' ? 'flex' : 'hidden'} flex-col flex-1 h-full`}>
                     {actionId ? (
                       <SingleAction
                         actions={project?.actions}

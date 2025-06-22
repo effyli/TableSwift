@@ -26,8 +26,11 @@ interface SourceDataRow extends LabelRow {
 
 export const LabelForm: React.FC<LabelFormProps> = ({ labels, activeLabels, selectedOperation, generateCode, onFieldChange }) => {
     const [isLoadingGenerating, setIsLoadingGenerating] = useState(false);
-    const [isSavingLabels, setIsSavingLabels] = useState(false);
     const [editableLabels, setEditableLabels] = useState<LabelPair[]>([]);
+
+    useEffect(() => {
+        console.log(isLoadingGenerating)
+    }, [isLoadingGenerating, setIsLoadingGenerating]);
 
     useEffect(() => {
         if (labels?.[0]?.json) {
@@ -60,7 +63,7 @@ export const LabelForm: React.FC<LabelFormProps> = ({ labels, activeLabels, sele
 
     const handleSavingLabels = async () => {
         if (!labels?.[0]) return;
-        setIsSavingLabels(true);
+        setIsLoadingGenerating(true);
 
         const newLabels: Labels = {
             ...labels[activeLabels],
@@ -73,14 +76,14 @@ export const LabelForm: React.FC<LabelFormProps> = ({ labels, activeLabels, sele
         } catch (error) {
             alert('Failed to save labels. Please try again.');
         } finally {
-            setIsSavingLabels(false);
+            setIsLoadingGenerating(false);
         }
     }
 
-    const handleGenerateCode = () => {
+    const handleGenerateCode = async () => {
         setIsLoadingGenerating(true);
         try {
-            generateCode({
+            await generateCode({
                 ...labels[activeLabels],
                 json: editableLabels
             });
@@ -221,53 +224,54 @@ export const LabelForm: React.FC<LabelFormProps> = ({ labels, activeLabels, sele
                 {table}
                 <div className="mt-4 flex gap-x-4 justify-between items-center">
                     {
-                        isLoadingGenerating ? (
-                            <div className='flex items-center justify-center'>
-                                <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-500 border-t-transparent"></div>
-                            </div>
-                        ) : labels[activeLabels].codes && labels[activeLabels].codes.length > 0 ? (
-                            <div className='w-full flex justify-between items-center'>
-                                <div className='flex items-center'>
-                                    <button className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg' onClick={() => handleSavingLabels()}>
-                                        <MdOutlineSaveAs />
+                    isLoadingGenerating ? (
+                        <div className='flex items-center justify-center'>
+                            <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-500 border-t-transparent"></div>
+                        </div>
+                    ) : (
+                        <>
+                            {labels[activeLabels].codes && labels[activeLabels].codes.length > 0 ? (
+                                <div className='w-full flex justify-between items-center'>
+                                    <div className='flex items-center'>
+                                        <button className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg' onClick={() => handleSavingLabels()}>
+                                            <MdOutlineSaveAs />
+                                        </button>
+                                        <button className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg' onClick={() => handleGenerateCode()}>
+                                            <IoReload />
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className='flex items-center gap-x-4'>
+                                    <button
+                                        onClick={() => handleSavingLabels()}
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                                    >
+                                        Save labels
                                     </button>
-                                    <button className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg' onClick={() => handleGenerateCode()}>
-                                        <IoReload />
+                                    <button
+                                        onClick={() => handleGenerateCode()}
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                                    >
+                                        Generate Code
                                     </button>
                                 </div>
-                            </div>
-                        ) : (
-                            <div className='flex items-center gap-x-4'>
-                                <button
-                                    onClick={() => handleSavingLabels()}
-                                    disabled={isSavingLabels}
-                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-                                >
-                                    {isSavingLabels ? 'Saving...' : 'Save labels'}
-                                </button>
-                                <button
-                                    onClick={() => handleGenerateCode()}
-                                    disabled={isLoadingGenerating}
-                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-                                >
-                                    {isLoadingGenerating ? 'Generating...' : 'Generate Code'}
-                                </button>
-                            </div>
-                        )
-                    }
-                    {
-                        (labels && labels.length > 1) && (
-                            <div className='flex items-center gap-2'>
-                                <button onClick={() => handleSwitchLabels('prev')} disabled={activeLabels === 0}>
-                                    <MdArrowBackIos />
-                                </button>
-                                <span>{activeLabels + 1}/{labels?.length}</span>
-                                <button onClick={() => handleSwitchLabels('next')} disabled={labels && activeLabels === labels.length - 1}>
-                                    <MdArrowForwardIos />
-                                </button>
-                            </div>
-                        )
-                    }
+                            )}
+
+                            {(labels && labels.length > 1) && (
+                                <div className='flex items-center gap-2'>
+                                    <button onClick={() => handleSwitchLabels('prev')} disabled={activeLabels === 0}>
+                                        <MdArrowBackIos />
+                                    </button>
+                                    <span>{activeLabels + 1}/{labels?.length}</span>
+                                    <button onClick={() => handleSwitchLabels('next')} disabled={labels && activeLabels === labels.length - 1}>
+                                        <MdArrowForwardIos />
+                                    </button>
+                                </div>
+                            )}
+                        </>
+                    )
+                }
                 </div>
             </div>
     );

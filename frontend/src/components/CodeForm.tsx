@@ -85,10 +85,11 @@ export const CodeForm: React.FC<CodeFormProps> = ({ activeAction, actions, codes
         setIsSavingCode(false);
     }
 
-    const handleExecuteCode = () => {
+    const handleExecuteCode = async () => {
         setIsExecutingCode(true)
+        hideModal();
         try {
-            executeCode({
+            await executeCode({
                 ...codes[activeCode],
                 code: editableCode
             });
@@ -96,7 +97,6 @@ export const CodeForm: React.FC<CodeFormProps> = ({ activeAction, actions, codes
             alert('Failed to execute code. Please try again.');
         } finally {
             setIsExecutingCode(false);
-            hideModal();
         }
     }
 
@@ -139,88 +139,98 @@ export const CodeForm: React.FC<CodeFormProps> = ({ activeAction, actions, codes
 
             <div className="mt-4 flex gap-x-4 justify-between items-center">
                 {
-                    isExecuted ? (
-                        <div className='w-full flex justify-between items-center'>
-                            <div className='flex items-center'>
-                                <button className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg' onClick={() => handleSavingCode()}>
-                                    <MdOutlineSaveAs />
-                                </button>
-                                <button 
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleModal({
-                                            isOpen: true,
-                                            title: 'Re-execute Action',
-                                            message: 'Are you sure you want to re-execute this action? Re-executing will revert the previous execution and run the current code on the reverted data.',
-                                            primaryButton: {
-                                                label: 'Re-execute',
-                                                onClick: () => handleExecuteCode(),
-                                            },
-                                            secondaryButton: {
-                                                label: 'Cancel',
-                                                onClick: hideModal,
-                                            },
-                                        })
-                                    }}
-                                    className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg'
-                                >
-                                    <IoReload />
-                                </button>
-                            </div>
-                            
-                            <button 
-                                className='flex gap-2 items-center justify-self-end ml-auto text-red' 
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleModal({
-                                    isOpen: true,
-                                    title: 'Revert Action',
-                                    message: 'Are you sure you want to revert this action? This action cannot be undone.',
-                                    primaryButton: {
-                                        label: 'Revert',
-                                        onClick: () => handleRevertAction(activeAction.id),
-                                    },
-                                    secondaryButton: {
-                                        label: 'Cancel',
-                                        onClick: hideModal,
-                                    },
-                                    })
-                                }}
-                            >
-                                Revert
-                                <GrRevert />
-                            </button>
+                    isExecutingCode ? (
+                        <div className='flex items-center justify-center'>
+                            <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-500 border-t-transparent"></div>
                         </div>
                     ) : (
-                        <div className='flex items-center gap-x-4'>
-                            <button
-                                onClick={() => handleSavingCode()}
-                                disabled={isSavingCode}
-                                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-                            >
-                                {isSavingCode ? 'Saving...' : 'Save code'}
-                            </button>
-                            <button
-                                onClick={() => handleExecuteCode()}
-                                disabled={isExecutingCode}
-                                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-                            >
-                                {isExecutingCode ? 'Executing...' : 'Execute Code'}
-                            </button>
-                        </div>
-                    )
-                }
-                {
-                    (codes.length > 1) && (
-                        <div className='flex items-center gap-2'>
-                            <button onClick={() => handleSwitchCode('prev')} disabled={activeCode === 0}>
-                                <MdArrowBackIos />
-                            </button>
-                            <span>{activeCode + 1}/{codes.length}</span>
-                            <button onClick={() => handleSwitchCode('next')} disabled={activeCode === codes.length - 1}>
-                                <MdArrowForwardIos />
-                            </button>
-                        </div>
+                        <>
+                            {
+                                isExecuted ? (
+                                    <div className='w-full flex justify-between items-center'>
+                                        <div className='flex items-center'>
+                                            <button className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg' onClick={() => handleSavingCode()}>
+                                                <MdOutlineSaveAs />
+                                            </button>
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleModal({
+                                                        isOpen: true,
+                                                        title: 'Re-execute Action',
+                                                        message: 'Are you sure you want to re-execute this action? Re-executing will revert the previous execution and run the current code on the reverted data.',
+                                                        primaryButton: {
+                                                            label: 'Re-execute',
+                                                            onClick: () => handleExecuteCode(),
+                                                        },
+                                                        secondaryButton: {
+                                                            label: 'Cancel',
+                                                            onClick: hideModal,
+                                                        },
+                                                    })
+                                                }}
+                                                className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg'
+                                            >
+                                                <IoReload />
+                                            </button>
+                                        </div>
+            
+                                        <button 
+                                            className='flex gap-2 items-center justify-self-end ml-auto text-red' 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleModal({
+                                                isOpen: true,
+                                                title: 'Revert Action',
+                                                message: 'Are you sure you want to revert this action? This action cannot be undone.',
+                                                primaryButton: {
+                                                    label: 'Revert',
+                                                    onClick: () => handleRevertAction(activeAction.id),
+                                                },
+                                                secondaryButton: {
+                                                    label: 'Cancel',
+                                                    onClick: hideModal,
+                                                },
+                                                })
+                                            }}
+                                        >
+                                            Revert
+                                            <GrRevert />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className='flex items-center gap-x-4'>
+                                        <button
+                                            onClick={() => handleSavingCode()}
+                                            disabled={isSavingCode}
+                                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                                        >
+                                            {isSavingCode ? 'Saving...' : 'Save code'}
+                                        </button>
+                                        <button
+                                            onClick={() => handleExecuteCode()}
+                                            disabled={isExecutingCode}
+                                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                                        >
+                                            {isExecutingCode ? 'Executing...' : 'Execute Code'}
+                                        </button>
+                                    </div>
+                                )
+                            }
+                            {
+                                (codes.length > 1) && (
+                                    <div className='flex items-center gap-2'>
+                                        <button onClick={() => handleSwitchCode('prev')} disabled={activeCode === 0}>
+                                            <MdArrowBackIos />
+                                        </button>
+                                        <span>{activeCode + 1}/{codes.length}</span>
+                                        <button onClick={() => handleSwitchCode('next')} disabled={activeCode === codes.length - 1}>
+                                            <MdArrowForwardIos />
+                                        </button>
+                                    </div>
+                                )
+                            }
+                        </>
                     )
                 }
             </div>

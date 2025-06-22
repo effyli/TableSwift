@@ -83,10 +83,10 @@ export const ActionForm: React.FC<ActionFormProps> = ({
         }
     };
 
-    const handleRegenerateLabels = () => {
+    const handleRegenerateLabels = async () => {
         setIsLoadingGenerating(true);
         try {
-            generateLabels(undefined);
+            await generateLabels(undefined);
         }
         catch (err) {
             alert('Error regenerating labels. Please try again.');
@@ -155,55 +155,54 @@ export const ActionForm: React.FC<ActionFormProps> = ({
             </div>
 
             <div className='mt-1'>
-                {
-                isLoadingGenerating ? (
+                {isLoadingGenerating ? (
                     <div className='flex items-center'>
                         <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-500 border-t-transparent"></div>
                     </div>
-                ) : descriptionDisabled ? (
-                    <div className='flex justify-between items-center'>
-                        <div className='flex items-center'>
-                            <button className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg' onClick={() => openDescriptionEditor()}>
-                                <FaRegEdit />
-                            </button>
-                            <button className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg' onClick={() => handleRegenerateLabels()}>
-                                <IoReload />
-                            </button>
-                        </div>
-                        {
-                            (descriptions && descriptions.length > 1) && (
-                                <div className='flex items-center gap-2'>
-                                    <button onClick={() => handleSwitchDescription('prev')} disabled={activeDescription === 0}>
-                                        <MdArrowBackIos />
+                ) : (
+                    <>
+                        {descriptionDisabled ? (
+                            <div className='flex justify-between items-center'>
+                                <div className='flex items-center'>
+                                    <button className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg' onClick={() => openDescriptionEditor()}>
+                                        <FaRegEdit />
                                     </button>
-                                    <span>{activeDescription + 1}/{descriptions?.length}</span>
-                                    <button onClick={() => handleSwitchDescription('next')} disabled={descriptions && activeDescription === descriptions.length - 1}>
-                                        <MdArrowForwardIos />
+                                    <button className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg' onClick={() => handleRegenerateLabels()}>
+                                        <IoReload />
                                     </button>
                                 </div>
-                            )
-                        }
-                    </div>
-                ) : (
-                    <div className='flex items-center gap-x-2'>
-                        {
-                            (hasDescriptions) && (
+                                {(descriptions && descriptions.length > 1) && (
+                                    <div className='flex items-center gap-2'>
+                                        <button onClick={() => handleSwitchDescription('prev')} disabled={activeDescription === 0}>
+                                            <MdArrowBackIos />
+                                        </button>
+                                        <span>{activeDescription + 1}/{descriptions?.length}</span>
+                                        <button onClick={() => handleSwitchDescription('next')} disabled={descriptions && activeDescription === descriptions.length - 1}>
+                                            <MdArrowForwardIos />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className='flex items-center gap-x-2'>
+                                {hasDescriptions && (
+                                    <button
+                                        onClick={() => setDescriptionDisabled(true)}
+                                        className="bg-black-lighter hover:bg-black-lightest text-white px-4 py-2 rounded-lg"
+                                    >
+                                        Cancel
+                                    </button>
+                                )}
                                 <button
-                                    onClick={() => setDescriptionDisabled(true)}
-                                    className="bg-black-lighter hover:bg-black-lightest text-white px-4 py-2 rounded-lg"
+                                    onClick={() => handleGenerateLabels()}
+                                    disabled={isLoadingGenerating || !selectedOperation || !fileColumn || !adjustedDescription}
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                                 >
-                                    Cancel
+                                    {hasDescriptions ? 'Regenerate Labels' : 'Generate Labels'}
                                 </button>
-                            )
-                        }
-                        <button
-                            onClick={() => handleGenerateLabels()}
-                            disabled={isLoadingGenerating || !selectedOperation || !fileColumn || !adjustedDescription}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-                        >
-                            {isLoadingGenerating ? 'Generating...' : hasDescriptions ? 'Regenerate Labels' : 'Generate Labels'}
-                        </button>
-                    </div>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
 
