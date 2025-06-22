@@ -129,7 +129,7 @@ async def get_file_data(file_path: str = None, limit: int = 20, offset: int = 0)
     
     try:
         # Read the CSV file
-        df = pd.read_csv(file_path)
+        df = pd.read_csv(file_path, dtype=str, quotechar='"')
         total_rows = len(df)
         
         # Get the requested portion

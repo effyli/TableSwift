@@ -174,10 +174,12 @@ export const Dashboard: React.FC = () => {
                   <div className={`${activeView === 'actions' ? 'flex' : 'hidden'} flex-col flex-1`}>
                     {actionId ? (
                       <SingleAction
+                        actions={project?.actions}
                         projectAction={project?.active_action}
                         isLoadingProject={isLoadingProject}
                         onActionUpdate={handleSetActionUpdate}
                         handleFileDataUpdate={handleFilesDataUpdate}
+                        onActionListUpdate={handleActionListUpdate}
                         operations={operations}
                         fileColumns={fileColumns}
                       />
@@ -185,7 +187,6 @@ export const Dashboard: React.FC = () => {
                       <ActionHistory
                         actions={project?.actions}
                         onActionListUpdate={handleActionListUpdate}
-                        handleFileDataUpdate={handleFilesDataUpdate}
                         isLoadingProject={isLoadingProject}
                       />
                     )}
@@ -212,10 +213,12 @@ export const Dashboard: React.FC = () => {
                   <div className="flex flex-col overflow-auto">
                     {actionId ? (
                       <SingleAction
+                        actions={project?.actions}
                         projectAction={project?.active_action}
                         isLoadingProject={isLoadingProject}
                         onActionUpdate={handleSetActionUpdate}
                         handleFileDataUpdate={handleFilesDataUpdate}
+                        onActionListUpdate={handleActionListUpdate}
                         operations={operations}
                         fileColumns={fileColumns}
                       />
@@ -223,7 +226,6 @@ export const Dashboard: React.FC = () => {
                       <ActionHistory
                         actions={project?.actions}
                         onActionListUpdate={handleActionListUpdate}
-                        handleFileDataUpdate={handleFilesDataUpdate}
                         isLoadingProject={isLoadingProject}
                       />
                     )}

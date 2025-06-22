@@ -11,11 +11,10 @@ import { GrRevert } from "react-icons/gr";
 interface ActionHistoryProps {
   actions: ActionBase[] | null | undefined;
   onActionListUpdate: (actions: ActionBase[] | null, projectFile?: File) => void;
-  handleFileDataUpdate: (file: File, actionFile?: File) => void;
   isLoadingProject: boolean;
 }
 
-export const ActionHistory: React.FC<ActionHistoryProps> = ({ actions, onActionListUpdate, handleFileDataUpdate, isLoadingProject }) => {
+export const ActionHistory: React.FC<ActionHistoryProps> = ({ actions, onActionListUpdate, isLoadingProject }) => {
   const [error, setError] = useState<string | null>(null);
 
   const { handleModal, hideModal } = useModal();
@@ -67,6 +66,7 @@ export const ActionHistory: React.FC<ActionHistoryProps> = ({ actions, onActionL
       onActionListUpdate(updatedActions, updatedProjectFile || undefined);
     } catch (error) {
       setError('Failed to revert action');
+      alert('Failed to revert action. Please try again.');
     } finally {
       hideModal();
     }

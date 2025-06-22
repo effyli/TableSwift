@@ -11,17 +11,20 @@ import { LabelForm } from './LabelForm';
 import { CodeForm } from './CodeForm';
 import { formatActionJson } from '../util/formatAction';
 import { DiffViewer } from './Diff';
+import { ActionBase } from '../types/action';
 
 interface SingleActionProps {
+    actions: ActionBase[] | null | undefined;
     projectAction: Action | null | undefined;
     isLoadingProject: boolean;
     onActionUpdate: (action: Action | null) => void;
     handleFileDataUpdate: (file: File, actionFile?: File) => void;
+    onActionListUpdate: (actions: ActionBase[] | null, projectFile?: File) => void;
     operations: Operation[];
     fileColumns: string[];
 }
 
-export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoadingProject, onActionUpdate, handleFileDataUpdate, operations, fileColumns }) => {
+export const SingleAction: React.FC<SingleActionProps> = ({ actions, projectAction, isLoadingProject, onActionUpdate, handleFileDataUpdate, onActionListUpdate, operations, fileColumns }) => {
   const { projectId, actionId } = useParams();
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -29,6 +32,10 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [showAffectedRows, setShowAffectedRows] = useState<boolean>(false);
+
+  useEffect(() => {
+    console.log(projectAction);
+  }, [projectAction]);
 
   useEffect(() => {
     scrollToBottom();
@@ -259,11 +266,14 @@ export const SingleAction: React.FC<SingleActionProps> = ({ projectAction, isLoa
 
                   {projectAction.descriptions[projectAction.active_description].labels![projectAction.active_labels]!.codes!.length > 0 && (
                   <CodeForm 
+                    activeAction={projectAction}
+                    actions={actions}
                     codes={projectAction?.descriptions[projectAction.active_description]?.labels?.[projectAction.active_labels]?.codes || []} 
                     activeCode={projectAction?.active_code || 0}
                     isExecuted={!!projectAction?.file}
                     onFieldChange={handleActionChange}
                     executeCode={executeCode}
+                    onActionListUpdate={onActionListUpdate}
                   />
                   )}
                 </>

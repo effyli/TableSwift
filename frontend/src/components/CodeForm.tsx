@@ -3,19 +3,25 @@ import { Code } from '../types/code';
 import { Editor } from '@monaco-editor/react';
 import { Action } from '../types/action';
 import { actionService } from '../services/action.service';
+import { ActionBase } from '../types/action';
 import { MdArrowBackIos, MdArrowForwardIos, MdOutlineSaveAs } from 'react-icons/md';
 import { IoReload } from 'react-icons/io5';
 import { useModal } from '../context/ModalContext';
+import { GrRevert } from "react-icons/gr";
+import { File } from '../types/file';
 
 interface CodeFormProps {
+    activeAction: Action;
+    actions: ActionBase[] | null | undefined;
     codes: Code[];
     activeCode: number;
     isExecuted: boolean;
     onFieldChange: (field: keyof Action, value: any) => void;
     executeCode: (code: Code | undefined) => void;
+    onActionListUpdate: (actions: ActionBase[] | null, projectFile?: File) => void;
 }
 
-export const CodeForm: React.FC<CodeFormProps> = ({ codes, activeCode, isExecuted, onFieldChange, executeCode }) => {
+export const CodeForm: React.FC<CodeFormProps> = ({ activeAction, actions, codes, activeCode, isExecuted, onFieldChange, executeCode, onActionListUpdate }) => {
     const { handleModal, hideModal } = useModal();
     const [isSavingCode, setIsSavingCode] = useState(false);
     const [isExecutingCode, setIsExecutingCode] = useState(false);
@@ -94,6 +100,26 @@ export const CodeForm: React.FC<CodeFormProps> = ({ codes, activeCode, isExecute
         }
     }
 
+    const handleRevertAction = async (actionId: number) => {
+        try {
+          const updatedProjectFile = await actionService.revertAction(actionId);
+    
+          // Set action file to null
+          const updatedActions = actions?.map((action: ActionBase) =>
+            action.id === actionId ? {
+              ...action,
+              file: undefined,
+            } : action
+          ) || null;
+    
+          onActionListUpdate(updatedActions, updatedProjectFile || undefined);
+        } catch (error) {
+          alert('Failed to revert action. Please try again.');
+        } finally {
+          hideModal();
+        }
+      };
+
     return (
         <div className="mt-12 border-t border-gray-700 pt-12">
             <h3 className="text-lg font-semibold text-white mb-4">Code Snippets</h3>
@@ -141,6 +167,29 @@ export const CodeForm: React.FC<CodeFormProps> = ({ codes, activeCode, isExecute
                                     <IoReload />
                                 </button>
                             </div>
+                            
+                            <button 
+                                className='flex gap-2 items-center justify-self-end ml-auto text-red' 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleModal({
+                                    isOpen: true,
+                                    title: 'Revert Action',
+                                    message: 'Are you sure you want to revert this action? This action cannot be undone.',
+                                    primaryButton: {
+                                        label: 'Revert',
+                                        onClick: () => handleRevertAction(activeAction.id),
+                                    },
+                                    secondaryButton: {
+                                        label: 'Cancel',
+                                        onClick: hideModal,
+                                    },
+                                    })
+                                }}
+                            >
+                                Revert
+                                <GrRevert />
+                            </button>
                         </div>
                     ) : (
                         <div className='flex items-center gap-x-4'>
