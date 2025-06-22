@@ -21,7 +21,7 @@ python src/run_wrangler.py --data_dir %your_data_directory/data_transformation/b
 
 
 ## Interface Overview
-The TableSwift interface is a human-in-the-loop solution for wrangling csv files. The interface runs on Docker, so to start up the project run the following command from the main folder:
+The TableSwift interface is a human-in-the-loop solution for wrangling csv files. The interface runs on Docker, so after setting up the .env file in the backend folder, the project starts up by running the following command from the main folder:
 
 ```docker-compose up -d --build```
 
