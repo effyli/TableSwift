@@ -18,3 +18,19 @@ To start running jobs (e.g. for bing-query-logs-unit without data router and gen
 ```
 python src/run_wrangler.py --data_dir %your_data_directory/data_transformation/benchmark-bing-query-logs-unit%  --num_trials 3  --seed 42 --k 3 --d 0 --num_iter 5 --llm llama3.2 --lang python
 ```
+
+
+## Interface Overview
+The TableSwift interface is a human-in-the-loop solution for wrangling csv files. The interface runs on Docker, so after setting up the .env file in the backend folder, the project starts up by running the following command from the main folder:
+
+```docker-compose up -d --build```
+
+Here's a quick demo of the interface:
+
+https://github.com/user-attachments/assets/faa5faa8-1251-4c6d-85ed-7f7f7f2b6a3b
+
+
+
+
+
+

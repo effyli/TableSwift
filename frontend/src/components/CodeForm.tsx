@@ -1,0 +1,239 @@
+import React, { useEffect, useState } from 'react';
+import { Code } from '../types/code';
+import { Editor } from '@monaco-editor/react';
+import { Action } from '../types/action';
+import { actionService } from '../services/action.service';
+import { ActionBase } from '../types/action';
+import { MdArrowBackIos, MdArrowForwardIos, MdOutlineSaveAs } from 'react-icons/md';
+import { IoReload } from 'react-icons/io5';
+import { useModal } from '../context/ModalContext';
+import { GrRevert } from "react-icons/gr";
+import { File } from '../types/file';
+
+interface CodeFormProps {
+    activeAction: Action;
+    actions: ActionBase[] | null | undefined;
+    codes: Code[];
+    activeCode: number;
+    isExecuted: boolean;
+    onFieldChange: (field: keyof Action, value: any) => void;
+    executeCode: (code: Code | undefined) => void;
+    onActionListUpdate: (actions: ActionBase[] | null, projectFile?: File) => void;
+}
+
+export const CodeForm: React.FC<CodeFormProps> = ({ activeAction, actions, codes, activeCode, isExecuted, onFieldChange, executeCode, onActionListUpdate }) => {
+    const { handleModal, hideModal } = useModal();
+    const [isSavingCode, setIsSavingCode] = useState(false);
+    const [isExecutingCode, setIsExecutingCode] = useState(false);
+    const [editableCode, setEditableCode] = useState<string>('');
+    const [unsavedChanges, setUnsavedChanges] = useState<Record<number, string>>({});
+
+    useEffect(() => {
+        setEditableCode(unsavedChanges[activeCode] || codes[activeCode].code);
+    }, [activeCode, codes]);
+
+    const handleSwitchCode = (direction: 'prev' | 'next') => {
+        setUnsavedChanges(prev => ({
+            ...prev,
+            [activeCode]: editableCode
+        }));
+
+        if (direction === 'prev' && activeCode > 0) {
+            onFieldChange('active_code', activeCode - 1);
+        } else if (direction === 'next' && activeCode < codes.length - 1) {
+            onFieldChange('active_code', activeCode + 1);
+        }
+    };
+
+    const handleCodeChange = (value: string | undefined) => {
+        if (value !== undefined) {
+            const newCode = [ ...codes ]
+            newCode[activeCode] = {
+                ...newCode[activeCode],
+                code: value
+            };
+
+            setEditableCode(newCode[activeCode].code);
+            // onFieldChange('code', newCode[activeCode]);
+
+            setUnsavedChanges(prev => ({
+                ...prev,
+                [activeCode]: value
+            }));
+        }
+    }
+
+    const handleSavingCode = async () => {
+        if (!codes?.[0]) return;
+        setIsSavingCode(true);
+        try {
+
+            const newCode: Code = {
+                ...codes[activeCode],
+                code: editableCode
+            }
+            await actionService.saveCode(newCode);
+            // Clear unsaved changes for this version after successful save
+            setUnsavedChanges(prev => {
+                const newState = { ...prev };
+                delete newState[activeCode];
+                return newState;
+            });
+        } catch (error) {
+            alert('Failed to save code. Please try again.');
+        }
+        setIsSavingCode(false);
+    }
+
+    const handleExecuteCode = async () => {
+        setIsExecutingCode(true)
+        hideModal();
+        try {
+            await executeCode({
+                ...codes[activeCode],
+                code: editableCode
+            });
+        } catch (error) {
+            alert('Failed to execute code. Please try again.');
+        } finally {
+            setIsExecutingCode(false);
+        }
+    }
+
+    const handleRevertAction = async (actionId: number) => {
+        try {
+          const updatedProjectFile = await actionService.revertAction(actionId);
+    
+          // Set action file to null
+          const updatedActions = actions?.map((action: ActionBase) =>
+            action.id === actionId ? {
+              ...action,
+              file: undefined,
+            } : action
+          ) || null;
+    
+          onActionListUpdate(updatedActions, updatedProjectFile || undefined);
+        } catch (error) {
+          alert('Failed to revert action. Please try again.');
+        } finally {
+          hideModal();
+        }
+      };
+
+    return (
+        <div className="mt-12 border-t border-gray-700 pt-12">
+            <h3 className="text-lg font-semibold text-white mb-4">Code Snippets</h3>
+
+            <Editor
+                height="50vh"
+                theme="vs-dark"
+                defaultLanguage="python"
+                value={editableCode}
+                onChange={handleCodeChange}
+                options={{
+                    minimap: {
+                        enabled: false
+                    }
+                }}
+            />
+
+            <div className="mt-4 flex gap-x-4 justify-between items-center">
+                {
+                    isExecutingCode ? (
+                        <div className='flex items-center justify-center'>
+                            <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-500 border-t-transparent"></div>
+                        </div>
+                    ) : (
+                        <>
+                            {
+                                isExecuted ? (
+                                    <div className='w-full flex justify-between items-center'>
+                                        <div className='flex items-center'>
+                                            <button className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg' onClick={() => handleSavingCode()}>
+                                                <MdOutlineSaveAs />
+                                            </button>
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleModal({
+                                                        isOpen: true,
+                                                        title: 'Re-execute Action',
+                                                        message: 'Are you sure you want to re-execute this action? Re-executing will revert the previous execution and run the current code on the reverted data.',
+                                                        primaryButton: {
+                                                            label: 'Re-execute',
+                                                            onClick: () => handleExecuteCode(),
+                                                        },
+                                                        secondaryButton: {
+                                                            label: 'Cancel',
+                                                            onClick: hideModal,
+                                                        },
+                                                    })
+                                                }}
+                                                className='flex items-center gap-2 text-gray-400 hover:bg-black-lighter p-2 rounded-lg'
+                                            >
+                                                <IoReload />
+                                            </button>
+                                        </div>
+            
+                                        <button 
+                                            className='flex gap-2 items-center justify-self-end ml-auto text-red' 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleModal({
+                                                isOpen: true,
+                                                title: 'Revert Action',
+                                                message: 'Are you sure you want to revert this action? This action cannot be undone.',
+                                                primaryButton: {
+                                                    label: 'Revert',
+                                                    onClick: () => handleRevertAction(activeAction.id),
+                                                },
+                                                secondaryButton: {
+                                                    label: 'Cancel',
+                                                    onClick: hideModal,
+                                                },
+                                                })
+                                            }}
+                                        >
+                                            Revert
+                                            <GrRevert />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className='flex items-center gap-x-4'>
+                                        <button
+                                            onClick={() => handleSavingCode()}
+                                            disabled={isSavingCode}
+                                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                                        >
+                                            {isSavingCode ? 'Saving...' : 'Save code'}
+                                        </button>
+                                        <button
+                                            onClick={() => handleExecuteCode()}
+                                            disabled={isExecutingCode}
+                                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                                        >
+                                            {isExecutingCode ? 'Executing...' : 'Execute Code'}
+                                        </button>
+                                    </div>
+                                )
+                            }
+                            {
+                                (codes.length > 1) && (
+                                    <div className='flex items-center gap-2'>
+                                        <button onClick={() => handleSwitchCode('prev')} disabled={activeCode === 0}>
+                                            <MdArrowBackIos />
+                                        </button>
+                                        <span>{activeCode + 1}/{codes.length}</span>
+                                        <button onClick={() => handleSwitchCode('next')} disabled={activeCode === codes.length - 1}>
+                                            <MdArrowForwardIos />
+                                        </button>
+                                    </div>
+                                )
+                            }
+                        </>
+                    )
+                }
+            </div>
+        </div>
+    )
+}

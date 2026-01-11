@@ -1,0 +1,25 @@
+version: "3"
+services:
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - 3000:5173
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - 80:80
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - redis
+  redis:
+    image: redis
+    ports:
+      - 6379:6379
